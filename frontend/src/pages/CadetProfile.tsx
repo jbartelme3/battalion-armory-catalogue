@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { cadetsApi } from "../api/client";
+import { cadetsApi, ApiError } from "../api/client";
 import type { CadetProfile as CadetProfileType, EquipmentItem, EquipmentType } from "../types";
 import { EQUIPMENT_TYPE_LABELS, EQUIPMENT_TYPE_ORDER, formatHgRank, formatPosition, formatRank } from "../types";
 import ConditionBadge from "../components/ConditionBadge";
@@ -13,6 +13,8 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
   const [substituteType, setSubstituteType] = useState<EquipmentType | null>(null);
   const [editing, setEditing] = useState(false);
   const [detailItem, setDetailItem] = useState<EquipmentItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -39,6 +41,22 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
   }
 
   const eligibleTypes = EQUIPMENT_TYPE_ORDER.filter((type) => profile.eligible_slots[type]);
+
+  async function handleDelete() {
+    if (!profile) return;
+    if (!confirm(`Delete ${profile.first_name} ${profile.last_name} from the roster? Any assigned equipment will become unassigned, not deleted. This cannot be undone.`)) {
+      return;
+    }
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await cadetsApi.remove(cadetId);
+      onBack();
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : "Failed to delete cadet.");
+      setDeleting(false);
+    }
+  }
 
   if (editing) {
     return (
@@ -87,13 +105,23 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
               </p>
             )}
           </div>
-          <button
-            onClick={() => setEditing(true)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Edit
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => setEditing(true)}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Edit
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </button>
+          </div>
         </div>
+        {deleteError && <p className="mt-2 text-sm text-red-600">{deleteError}</p>}
       </div>
 
       <div className="mt-6 space-y-3">
