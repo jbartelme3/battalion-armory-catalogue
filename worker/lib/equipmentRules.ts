@@ -87,7 +87,7 @@ export const HG_LEADERSHIP_RANKS = [
 // Line ranks within the Honor Guard (as distinct from a cadet's overall
 // battalion rank) — these carry rifles/bayonets like any other Guardsman.
 // Informational only; they don't affect eligibility.
-export const HG_LINE_RANKS = ["Lieutenant", "Sergeant 1st Class", "Sergeant", "Corporal", "Private First Class", "Private"] as const;
+export const HG_LINE_RANKS = ["Lieutenant", "Staff Sergeant", "Sergeant", "Corporal", "Private First Class", "Private"] as const;
 
 const HG_LEADERSHIP_SET = new Set<string>(HG_LEADERSHIP_RANKS);
 
