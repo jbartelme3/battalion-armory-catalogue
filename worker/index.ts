@@ -4,6 +4,7 @@ import { clearSessionCookie, createSessionCookie, isAuthenticated } from "./auth
 import { getClientIp, isLocked, recordFailedAttempt, resendCode, resetLockout, verifyCode } from "./lib/loginSecurity";
 import { cadets } from "./routes/cadets";
 import { equipment } from "./routes/equipment";
+import { riflePickup } from "./routes/riflePickup";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -69,6 +70,7 @@ app.use("/api/*", async (c, next) => {
 
 app.route("/api/cadets", cadets);
 app.route("/api/equipment", equipment);
+app.route("/api/rifle-pickup", riflePickup);
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 

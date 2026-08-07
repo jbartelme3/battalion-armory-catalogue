@@ -1,4 +1,4 @@
-import type { Cadet, CadetProfile, EquipmentItem, EquipmentType } from "../types";
+import type { Cadet, CadetProfile, EquipmentItem, EquipmentType, HistoryEntry } from "../types";
 
 class ApiError extends Error {
   status: number;
@@ -52,6 +52,7 @@ export const cadetsApi = {
   update: (id: number, data: Partial<Cadet>) =>
     request<Cadet>(`/api/cadets/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   remove: (id: number) => request<void>(`/api/cadets/${id}`, { method: "DELETE" }),
+  history: (id: number) => request<HistoryEntry[]>(`/api/cadets/${id}/history`),
 };
 
 export const equipmentApi = {
@@ -65,4 +66,34 @@ export const equipmentApi = {
   assign: (id: number, cadetId: number | null) =>
     request<EquipmentItem>(`/api/equipment/${id}/assign`, { method: "POST", body: JSON.stringify({ cadet_id: cadetId }) }),
   remove: (id: number) => request<void>(`/api/equipment/${id}`, { method: "DELETE" }),
+  history: (id: number) => request<HistoryEntry[]>(`/api/equipment/${id}/history`),
+};
+
+// Discriminated result shape returned by every Rifle Pickup action route.
+export interface PickupCadetSummary {
+  id: number;
+  first_name: string;
+  last_name: string;
+  company: "A" | "B" | "C";
+  position: string;
+}
+
+export type PickupResult =
+  | { status: "unmatched"; scanned_id: string }
+  | { status: "not_found" }
+  | { status: "ineligible"; cadet: PickupCadetSummary; reason: string }
+  | { status: "none_available"; cadet: PickupCadetSummary }
+  | { status: "checked_in" | "checked_out"; cadet: PickupCadetSummary; item: { id: number; tag: string } };
+
+export const riflePickupApi = {
+  scan: (scannedId: string) =>
+    request<PickupResult>("/api/rifle-pickup/scan", { method: "POST", body: JSON.stringify({ scanned_id: scannedId }) }),
+  manual: (cadetId: number) =>
+    request<PickupResult>("/api/rifle-pickup/manual", { method: "POST", body: JSON.stringify({ cadet_id: cadetId }) }),
+  link: (cadetId: number, scannedId: string) =>
+    request<PickupResult>("/api/rifle-pickup/link", {
+      method: "POST",
+      body: JSON.stringify({ cadet_id: cadetId, scanned_id: scannedId }),
+    }),
+  activity: (limit = 50) => request<HistoryEntry[]>(`/api/rifle-pickup/activity?limit=${limit}`),
 };

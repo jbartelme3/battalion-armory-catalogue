@@ -6,6 +6,7 @@ import ConditionBadge from "../components/ConditionBadge";
 import SubstituteModal from "../components/SubstituteModal";
 import CadetForm from "../components/CadetForm";
 import EquipmentDetailModal from "../components/EquipmentDetailModal";
+import HistorySection from "../components/HistorySection";
 
 export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onBack: () => void }) {
   const [profile, setProfile] = useState<CadetProfileType | null>(null);
@@ -74,6 +75,7 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
             classman: profile.classman,
             is_honor_guard: profile.is_honor_guard,
             hg_rank: profile.hg_rank,
+            student_id: profile.student_id,
           }}
           onCancel={() => setEditing(false)}
           onSubmit={async (values) => {
@@ -175,6 +177,8 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
           );
         })}
       </div>
+
+      <HistorySection variant="cadet" fetchHistory={() => cadetsApi.history(cadetId)} />
 
       {substituteType && (
         <SubstituteModal

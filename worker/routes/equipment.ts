@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { CadetRow, Env, EquipmentRow } from "../types";
+import type { CadetRow, Env, EquipmentHistoryRow, EquipmentRow } from "../types";
 import {
   EQUIPMENT_TYPES,
   conditionSortRank,
@@ -7,14 +7,12 @@ import {
   validateAssignment,
   type EquipmentType,
 } from "../lib/equipmentRules";
+import { performAssignment, type EquipmentRowWithOwner } from "../lib/assignment";
+import { serializeHistory } from "../lib/serialize";
 
 export const equipment = new Hono<{ Bindings: Env }>();
 
-type RowWithOwner = EquipmentRow & {
-  owner_first_name: string | null;
-  owner_last_name: string | null;
-  owner_company: string | null;
-};
+type RowWithOwner = EquipmentRowWithOwner;
 
 function serialize(row: RowWithOwner) {
   const hasSheath = row.has_sheath === null ? null : !!row.has_sheath;
@@ -219,42 +217,32 @@ equipment.patch("/:id", async (c) => {
   return c.json(serialize(row!));
 });
 
-// POST /api/equipment/:id/assign — assign/reassign/unassign ownership (the "substitute" action).
-// If the target cadet already holds another item of this type, that item is freed up (unassigned)
-// so it stays in the catalogue rather than being silently orphaned.
+// POST /api/equipment/:id/assign — assign/reassign/unassign ownership (the "substitute" action,
+// and also what Rifle Pickup drives under the hood). If the target cadet already holds another
+// item of this type, that item is freed up (unassigned) so it stays in the catalogue rather than
+// being silently orphaned. Every ownership change here also updates equipment_assignment_history
+// via performAssignment (see worker/lib/assignment.ts) so the cadet/equipment "History" sections
+// stay accurate.
 equipment.post("/:id/assign", async (c) => {
   const id = Number(c.req.param("id"));
-  const { DB } = c.env;
-
-  const item = await DB.prepare("SELECT * FROM equipment_items WHERE id = ?").bind(id).first<EquipmentRow>();
-  if (!item) return c.json({ error: "Equipment item not found" }, 404);
-
   const body = await c.req.json<{ cadet_id: number | null }>();
 
-  if (body.cadet_id !== null) {
-    const cadet = await DB.prepare("SELECT * FROM cadets WHERE id = ?").bind(body.cadet_id).first<CadetRow>();
-    if (!cadet) return c.json({ error: "Cadet not found" }, 404);
+  const result = await performAssignment(c.env.DB, id, body.cadet_id);
+  if (!result.ok) return c.json({ error: result.error }, result.status);
 
-    const error = validateAssignment(toCadetLike(cadet), {
-      type: item.type as EquipmentType,
-      is_ps_rifle: !!item.is_ps_rifle,
-      is_black_sl_bayonet: !!item.is_black_sl_bayonet,
-    });
-    if (error) return c.json({ error }, 400);
+  return c.json(serialize(result.item));
+});
 
-    await DB.prepare(
-      "UPDATE equipment_items SET owner_cadet_id = NULL, updated_at = datetime('now') WHERE type = ? AND owner_cadet_id = ? AND id != ?",
-    )
-      .bind(item.type, body.cadet_id, id)
-      .run();
-  }
-
-  await DB.prepare("UPDATE equipment_items SET owner_cadet_id = ?, updated_at = datetime('now') WHERE id = ?")
-    .bind(body.cadet_id, id)
-    .run();
-
-  const row = await DB.prepare(`${SELECT_WITH_OWNER} WHERE e.id = ?`).bind(id).first<RowWithOwner>();
-  return c.json(serialize(row!));
+// GET /api/equipment/:id/history — checkout/return log for this item, newest first.
+equipment.get("/:id/history", async (c) => {
+  const id = Number(c.req.param("id"));
+  const { DB } = c.env;
+  const { results } = await DB.prepare(
+    "SELECT * FROM equipment_assignment_history WHERE equipment_id = ? ORDER BY checked_out_at DESC, id DESC",
+  )
+    .bind(id)
+    .all<EquipmentHistoryRow>();
+  return c.json(results.map(serializeHistory));
 });
 
 // DELETE /api/equipment/:id

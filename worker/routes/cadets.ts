@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import type { Env, CadetRow, EquipmentRow } from "../types";
+import type { Env, CadetRow, EquipmentHistoryRow, EquipmentRow } from "../types";
 import { resolveEligibleSlots } from "../lib/equipmentRules";
-import { serializeCadet, serializeEquipment } from "../lib/serialize";
+import { serializeCadet, serializeEquipment, serializeHistory } from "../lib/serialize";
 
 export const cadets = new Hono<{ Bindings: Env }>();
 
@@ -76,6 +76,7 @@ cadets.post("/", async (c) => {
     classman?: string | null;
     is_honor_guard?: boolean;
     hg_rank?: string | null;
+    student_id?: string | null;
   }>();
 
   if (!body.first_name?.trim() || !body.last_name?.trim() || !["A", "B", "C"].includes(body.company)) {
@@ -83,21 +84,28 @@ cadets.post("/", async (c) => {
   }
 
   const { DB } = c.env;
-  const result = await DB.prepare(
-    `INSERT INTO cadets (first_name, last_name, company, position, rank, classman, is_honor_guard, hg_rank, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-  )
-    .bind(
-      body.first_name.trim(),
-      body.last_name.trim(),
-      body.company,
-      body.position?.trim() || "New Cadet",
-      body.rank?.trim() || null,
-      body.classman?.trim() || null,
-      body.is_honor_guard ? 1 : 0,
-      body.is_honor_guard ? body.hg_rank ?? null : null,
+  let result;
+  try {
+    result = await DB.prepare(
+      `INSERT INTO cadets (first_name, last_name, company, position, rank, classman, is_honor_guard, hg_rank, student_id, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     )
-    .run();
+      .bind(
+        body.first_name.trim(),
+        body.last_name.trim(),
+        body.company,
+        body.position?.trim() || "New Cadet",
+        body.rank?.trim() || null,
+        body.classman?.trim() || null,
+        body.is_honor_guard ? 1 : 0,
+        body.is_honor_guard ? body.hg_rank ?? null : null,
+        body.student_id?.trim() || null,
+      )
+      .run();
+  } catch (err) {
+    if (String(err).includes("UNIQUE")) return c.json({ error: "That Scan ID is already assigned to another cadet." }, 400);
+    throw err;
+  }
 
   const cadet = await DB.prepare("SELECT * FROM cadets WHERE id = ?")
     .bind(result.meta.last_row_id)
@@ -123,6 +131,7 @@ cadets.patch("/:id", async (c) => {
     classman: string | null;
     is_honor_guard: boolean;
     hg_rank: string | null;
+    student_id: string | null;
   }>>();
 
   const merged = {
@@ -134,27 +143,46 @@ cadets.patch("/:id", async (c) => {
     classman: body.classman !== undefined ? body.classman?.trim() || null : existing.classman,
     is_honor_guard: body.is_honor_guard ?? !!existing.is_honor_guard,
     hg_rank: body.is_honor_guard === false ? null : body.hg_rank ?? existing.hg_rank,
+    student_id: body.student_id !== undefined ? body.student_id?.trim() || null : existing.student_id,
   };
 
-  await DB.prepare(
-    `UPDATE cadets SET first_name = ?, last_name = ?, company = ?, position = ?, rank = ?, classman = ?, is_honor_guard = ?, hg_rank = ?, updated_at = datetime('now')
-     WHERE id = ?`,
-  )
-    .bind(
-      merged.first_name,
-      merged.last_name,
-      merged.company,
-      merged.position,
-      merged.rank,
-      merged.classman,
-      merged.is_honor_guard ? 1 : 0,
-      merged.is_honor_guard ? merged.hg_rank : null,
-      id,
+  try {
+    await DB.prepare(
+      `UPDATE cadets SET first_name = ?, last_name = ?, company = ?, position = ?, rank = ?, classman = ?, is_honor_guard = ?, hg_rank = ?, student_id = ?, updated_at = datetime('now')
+       WHERE id = ?`,
     )
-    .run();
+      .bind(
+        merged.first_name,
+        merged.last_name,
+        merged.company,
+        merged.position,
+        merged.rank,
+        merged.classman,
+        merged.is_honor_guard ? 1 : 0,
+        merged.is_honor_guard ? merged.hg_rank : null,
+        merged.student_id,
+        id,
+      )
+      .run();
+  } catch (err) {
+    if (String(err).includes("UNIQUE")) return c.json({ error: "That Scan ID is already assigned to another cadet." }, 400);
+    throw err;
+  }
 
   const updated = await DB.prepare("SELECT * FROM cadets WHERE id = ?").bind(id).first<CadetRow>();
   return c.json(serializeCadet(updated!));
+});
+
+// GET /api/cadets/:id/history — checkout/return log for everything this cadet has held, newest first.
+cadets.get("/:id/history", async (c) => {
+  const id = Number(c.req.param("id"));
+  const { DB } = c.env;
+  const { results } = await DB.prepare(
+    "SELECT * FROM equipment_assignment_history WHERE cadet_id = ? ORDER BY checked_out_at DESC, id DESC",
+  )
+    .bind(id)
+    .all<EquipmentHistoryRow>();
+  return c.json(results.map(serializeHistory));
 });
 
 // DELETE /api/cadets/:id

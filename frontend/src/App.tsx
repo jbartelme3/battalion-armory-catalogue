@@ -3,8 +3,15 @@ import { auth } from "./api/client";
 import Login from "./pages/Login";
 import CadetsTab from "./pages/CadetsTab";
 import EquipmentTab from "./pages/EquipmentTab";
+import RiflePickupTab from "./pages/RiflePickupTab";
 
-type Tab = "cadets" | "equipment";
+type Tab = "cadets" | "equipment" | "rifle_pickup";
+
+const TAB_LABELS: Record<Tab, string> = {
+  cadets: "Cadets",
+  equipment: "Equipment",
+  rifle_pickup: "Rifle Pickup",
+};
 
 export default function App() {
   const [authState, setAuthState] = useState<"checking" | "authed" | "unauthed">("checking");
@@ -40,22 +47,24 @@ export default function App() {
           </button>
         </div>
         <nav className="mx-auto flex max-w-5xl gap-1 px-4">
-          {(["cadets", "equipment"] as Tab[]).map((t) => (
+          {(["cadets", "equipment", "rifle_pickup"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`border-b-2 px-4 py-2 text-sm font-semibold capitalize ${
+              className={`border-b-2 px-4 py-2 text-sm font-semibold ${
                 tab === t ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              {t}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </nav>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        {tab === "cadets" ? <CadetsTab /> : <EquipmentTab />}
+        {tab === "cadets" && <CadetsTab />}
+        {tab === "equipment" && <EquipmentTab />}
+        {tab === "rifle_pickup" && <RiflePickupTab />}
       </main>
     </div>
   );

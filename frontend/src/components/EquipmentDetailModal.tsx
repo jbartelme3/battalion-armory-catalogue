@@ -12,6 +12,7 @@ import {
 } from "../types";
 import ConditionBadge from "./ConditionBadge";
 import TagInput from "./TagInput";
+import HistorySection from "./HistorySection";
 
 const CONDITIONS: Condition[] = ["green", "yellow", "red"];
 
@@ -245,6 +246,8 @@ export default function EquipmentDetailModal({
             </div>
           )}
         </div>
+
+        <HistorySection variant="equipment" fetchHistory={() => equipmentApi.history(item.id)} />
 
         <div className="mt-5 flex justify-between border-t border-slate-200 pt-4">
           <button onClick={remove} disabled={saving} className="text-sm font-medium text-red-600 hover:text-red-800">
