@@ -14,6 +14,7 @@ export interface CadetRow {
   company: "A" | "B" | "C";
   position: string;
   rank: string | null;
+  classman: string | null;
   is_honor_guard: 0 | 1;
   hg_rank: string | null;
 }

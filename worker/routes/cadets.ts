@@ -73,6 +73,7 @@ cadets.post("/", async (c) => {
     company: "A" | "B" | "C";
     position: string;
     rank?: string | null;
+    classman?: string | null;
     is_honor_guard?: boolean;
     hg_rank?: string | null;
   }>();
@@ -83,8 +84,8 @@ cadets.post("/", async (c) => {
 
   const { DB } = c.env;
   const result = await DB.prepare(
-    `INSERT INTO cadets (first_name, last_name, company, position, rank, is_honor_guard, hg_rank, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+    `INSERT INTO cadets (first_name, last_name, company, position, rank, classman, is_honor_guard, hg_rank, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
   )
     .bind(
       body.first_name.trim(),
@@ -92,6 +93,7 @@ cadets.post("/", async (c) => {
       body.company,
       body.position?.trim() || "New Cadet",
       body.rank?.trim() || null,
+      body.classman?.trim() || null,
       body.is_honor_guard ? 1 : 0,
       body.is_honor_guard ? body.hg_rank ?? null : null,
     )
@@ -118,6 +120,7 @@ cadets.patch("/:id", async (c) => {
     company: "A" | "B" | "C";
     position: string;
     rank: string | null;
+    classman: string | null;
     is_honor_guard: boolean;
     hg_rank: string | null;
   }>>();
@@ -128,12 +131,13 @@ cadets.patch("/:id", async (c) => {
     company: body.company ?? existing.company,
     position: body.position?.trim() ?? existing.position,
     rank: body.rank !== undefined ? body.rank?.trim() || null : existing.rank,
+    classman: body.classman !== undefined ? body.classman?.trim() || null : existing.classman,
     is_honor_guard: body.is_honor_guard ?? !!existing.is_honor_guard,
     hg_rank: body.is_honor_guard === false ? null : body.hg_rank ?? existing.hg_rank,
   };
 
   await DB.prepare(
-    `UPDATE cadets SET first_name = ?, last_name = ?, company = ?, position = ?, rank = ?, is_honor_guard = ?, hg_rank = ?, updated_at = datetime('now')
+    `UPDATE cadets SET first_name = ?, last_name = ?, company = ?, position = ?, rank = ?, classman = ?, is_honor_guard = ?, hg_rank = ?, updated_at = datetime('now')
      WHERE id = ?`,
   )
     .bind(
@@ -142,6 +146,7 @@ cadets.patch("/:id", async (c) => {
       merged.company,
       merged.position,
       merged.rank,
+      merged.classman,
       merged.is_honor_guard ? 1 : 0,
       merged.is_honor_guard ? merged.hg_rank : null,
       id,

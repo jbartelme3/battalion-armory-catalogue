@@ -95,6 +95,7 @@ export const RANKS = [
   "Private First Class",
   "Lance Corporal",
   "Corporal",
+  "Color Corporal",
   "Sergeant",
   "Staff Sergeant",
   "Second Lieutenant",
@@ -108,6 +109,7 @@ export const RANK_ABBREVIATIONS: Record<string, string> = {
   "Private First Class": "PFC",
   "Lance Corporal": "LCPL",
   Corporal: "CPL",
+  "Color Corporal": "CCPL",
   Sergeant: "SGT",
   "Staff Sergeant": "SSG",
   "Second Lieutenant": "2LT",
@@ -174,12 +176,138 @@ export const SUPPORT_EXEMPT_POSITIONS: PositionOption[] = [
   { label: "Battalion Athletic Officer", abbrev: "BATATH", exempt: true },
 ];
 
+// Regimental "auxiliary" staff positions — everything on the Regimental Staff
+// besides the Sergeants Major and the Commander/Adjutant/Operations Officer
+// trio (already covered above). Senior-only, Staff-Sergeant-rank, rifle-exempt.
+export const REGIMENTAL_AUXILIARY_POSITIONS: PositionOption[] = [
+  { label: "Regimental Supply Officer", abbrev: "REGSUP", exempt: true },
+  { label: "Regimental Athletic Officer", abbrev: "REGATH", exempt: true },
+  { label: "Regimental Aide to Administration", abbrev: "REGADMIN", exempt: true },
+  { label: "Regimental Aide to Admissions", abbrev: "REGADMISS", exempt: true },
+  { label: "Regimental Aide to Academics", abbrev: "REGACAD", exempt: true },
+  { label: "Regimental Aide to Spiritual Life", abbrev: "REGSPIR", exempt: true },
+  { label: "Regimental Honor Officer", abbrev: "REGHONOR", exempt: true },
+  { label: "Regimental Diversity Officer", abbrev: "REGDIV", exempt: true },
+  { label: "Regimental Drum Major", abbrev: "REGDRUM", exempt: true },
+  { label: "Regimental Honor Captain", abbrev: "REGHONCAP", exempt: true },
+];
+
 export const ALL_POSITIONS: PositionOption[] = [
   ...RIFLE_CARRYING_POSITIONS,
   ...SWORD_BEARING_NCO_POSITIONS,
   ...COMMISSIONED_OFFICER_POSITIONS,
   ...SUPPORT_EXEMPT_POSITIONS,
+  ...REGIMENTAL_AUXILIARY_POSITIONS,
 ];
+
+// Classmen (grade levels). 4th = Freshman, 3rd = Sophomore, 2nd = Junior, 1st = Senior.
+export const CLASSMEN = ["4th Classman", "3rd Classman", "2nd Classman", "1st Classman"] as const;
+export type Classman = (typeof CLASSMEN)[number];
+
+export const CLASSMAN_LABELS: Record<Classman, string> = {
+  "4th Classman": "4th Classman (Freshman)",
+  "3rd Classman": "3rd Classman (Sophomore)",
+  "2nd Classman": "2nd Classman (Junior)",
+  "1st Classman": "1st Classman (Senior)",
+};
+
+export function formatClassman(classman: string | null): string {
+  if (!classman) return "—";
+  return CLASSMAN_LABELS[classman as Classman] ?? classman;
+}
+
+export const CLASSMAN_SHORT_LABELS: Record<Classman, string> = {
+  "4th Classman": "Freshman",
+  "3rd Classman": "Sophomore",
+  "2nd Classman": "Junior",
+  "1st Classman": "Senior",
+};
+
+export function formatClassmanShort(classman: string | null): string | null {
+  if (!classman) return null;
+  return CLASSMAN_SHORT_LABELS[classman as Classman] ?? classman;
+}
+
+// Which classmen may hold each rank. Soft guide only (not server-enforced) —
+// used to filter/suggest dropdown options, per CMA's rank-by-grade rules.
+export const RANK_ALLOWED_CLASSMEN: Record<string, Classman[]> = {
+  "New Cadet": ["4th Classman", "3rd Classman", "2nd Classman"],
+  Private: ["4th Classman", "3rd Classman", "2nd Classman", "1st Classman"],
+  "Private First Class": ["4th Classman", "3rd Classman", "2nd Classman", "1st Classman"],
+  "Lance Corporal": ["3rd Classman", "2nd Classman", "1st Classman"],
+  Corporal: ["3rd Classman", "2nd Classman", "1st Classman"],
+  "Color Corporal": ["3rd Classman"],
+  Sergeant: ["2nd Classman", "1st Classman"],
+  "Staff Sergeant": ["1st Classman"],
+  "Second Lieutenant": ["1st Classman"],
+  "First Lieutenant": ["1st Classman"],
+  Captain: ["1st Classman"],
+};
+
+export interface PositionConstraint {
+  classmen?: Classman[];
+  ranks?: string[];
+}
+
+// Which classmen (and, for some billets, which ranks) each position is
+// restricted to. Positions not listed here are unconstrained by classman
+// (e.g. Element, Team Leader, Squad Leader, Unit NCO — "vary based on unit").
+export const POSITION_CONSTRAINTS: Record<string, PositionConstraint> = {
+  "New Cadet": { classmen: ["4th Classman", "3rd Classman", "2nd Classman"] },
+  [PLATOON_SERGEANT_POSITION]: { classmen: ["2nd Classman", "1st Classman"] },
+  "First Sergeant": { classmen: ["2nd Classman"] },
+  "Operations Sergeant": { classmen: ["2nd Classman"] },
+  "Battalion Sergeant Major": { classmen: ["2nd Classman"] },
+  "Regimental Sergeant Major": { classmen: ["2nd Classman"] },
+  "Regimental Operations Sergeant Major": { classmen: ["2nd Classman"] },
+  "Regimental Color Sergeant Major": { classmen: ["2nd Classman"] },
+  "Platoon Leader": { classmen: ["1st Classman"] },
+  "Executive Officer": { classmen: ["1st Classman"] },
+  "Unit Commander": { classmen: ["1st Classman"] },
+  "Battalion Operations Officer": { classmen: ["1st Classman"] },
+  "Battalion Adjutant": { classmen: ["1st Classman"] },
+  "Battalion Commander": { classmen: ["1st Classman"] },
+  "Regimental Operations Officer": { classmen: ["1st Classman"] },
+  "Regimental Adjutant": { classmen: ["1st Classman"] },
+  "Regimental Commander": { classmen: ["1st Classman"] },
+  "Battalion Armory Officer/NCO": { classmen: ["2nd Classman"] },
+  "Guidon Bearer": { classmen: ["3rd Classman"] },
+  "Battalion Supply Officer": { classmen: ["1st Classman"], ranks: ["Sergeant", "Staff Sergeant"] },
+  "Battalion Athletic Officer": { classmen: ["2nd Classman"] },
+  ...Object.fromEntries(
+    REGIMENTAL_AUXILIARY_POSITIONS.map((p) => [p.label, { classmen: ["1st Classman"], ranks: ["Staff Sergeant"] }]),
+  ),
+};
+
+// Platoon Sergeant rank is dictated by classman: a Junior PS is a Sergeant,
+// a Senior PS is a Staff Sergeant.
+export function platoonSergeantAutoRank(classman: string | null): string | null {
+  if (classman === "2nd Classman") return "Sergeant";
+  if (classman === "1st Classman") return "Staff Sergeant";
+  return null;
+}
+
+// Rank/position options filtered (softly) by the selected classman. Always
+// includes the current value even if it falls outside the filter, so editing
+// existing data never hides its own current selection.
+export function ranksForClassman(classman: string | null, currentValue?: string | null, allowedRanks?: string[]): string[] {
+  return RANKS.filter((r) => {
+    if (r === currentValue) return true;
+    if (allowedRanks && !allowedRanks.includes(r)) return false;
+    if (!classman) return true;
+    const allowed = RANK_ALLOWED_CLASSMEN[r];
+    return !allowed || allowed.includes(classman as Classman);
+  });
+}
+
+export function positionsForClassman(classman: string | null, currentValue?: string | null): PositionOption[] {
+  return ALL_POSITIONS.filter((p) => {
+    if (p.label === currentValue) return true;
+    if (!classman) return true;
+    const allowed = POSITION_CONSTRAINTS[p.label]?.classmen;
+    return !allowed || allowed.includes(classman as Classman);
+  });
+}
 
 export function formatPosition(position: string): string {
   const found = ALL_POSITIONS.find((p) => p.label === position);
@@ -199,6 +327,7 @@ export interface Cadet {
   company: "A" | "B" | "C";
   position: string;
   rank: string | null;
+  classman: string | null;
   is_honor_guard: boolean;
   hg_rank: string | null;
   rifle?: CadetRifle | null;

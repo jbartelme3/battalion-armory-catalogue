@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { cadetsApi, ApiError } from "../api/client";
 import type { CadetProfile as CadetProfileType, EquipmentItem, EquipmentType } from "../types";
-import { EQUIPMENT_TYPE_LABELS, EQUIPMENT_TYPE_ORDER, formatHgRank, formatPosition, formatRank } from "../types";
+import { EQUIPMENT_TYPE_LABELS, EQUIPMENT_TYPE_ORDER, formatClassman, formatHgRank, formatPosition, formatRank } from "../types";
 import ConditionBadge from "../components/ConditionBadge";
 import SubstituteModal from "../components/SubstituteModal";
 import CadetForm from "../components/CadetForm";
@@ -71,6 +71,7 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
             company: profile.company,
             position: profile.position,
             rank: profile.rank,
+            classman: profile.classman,
             is_honor_guard: profile.is_honor_guard,
             hg_rank: profile.hg_rank,
           }}
@@ -99,6 +100,7 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
               Unit: Company {profile.company} · {formatPosition(profile.position)}
             </p>
             <p className="mt-0.5 text-sm text-slate-600">Rank: {formatRank(profile.rank)}</p>
+            <p className="mt-0.5 text-sm text-slate-600">Classman: {formatClassman(profile.classman)}</p>
             {profile.is_honor_guard && (
               <p className="mt-1 text-sm font-medium text-blue-800">
                 Honor Guard{profile.hg_rank ? ` — ${formatHgRank(profile.hg_rank)}` : " — rank not set"}

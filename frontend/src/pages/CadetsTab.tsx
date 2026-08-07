@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { cadetsApi } from "../api/client";
 import type { Cadet } from "../types";
-import { ALL_POSITIONS, RANKS } from "../types";
+import { ALL_POSITIONS, CLASSMEN, CLASSMAN_LABELS, RANKS } from "../types";
 import CadetProfile from "./CadetProfile";
 import CadetRow from "../components/CadetRow";
 import AddCadetForm from "../components/AddCadetForm";
@@ -21,6 +21,7 @@ export default function CadetsTab() {
   const [filterUnit, setFilterUnit] = useState("");
   const [filterPosition, setFilterPosition] = useState("");
   const [filterRank, setFilterRank] = useState("");
+  const [filterClassman, setFilterClassman] = useState("");
   const [filterHg, setFilterHg] = useState("");
 
   async function loadCompany(company: Cadet["company"]) {
@@ -64,13 +65,15 @@ export default function CadetsTab() {
     );
   }
 
-  const isFiltering = search.trim() !== "" || filterUnit !== "" || filterPosition !== "" || filterRank !== "" || filterHg !== "";
+  const isFiltering =
+    search.trim() !== "" || filterUnit !== "" || filterPosition !== "" || filterRank !== "" || filterClassman !== "" || filterHg !== "";
 
   const filteredCadets = allCadets.filter((c) => {
     if (search.trim() && !`${c.first_name} ${c.last_name}`.toLowerCase().includes(search.trim().toLowerCase())) return false;
     if (filterUnit && c.company !== filterUnit) return false;
     if (filterPosition && c.position !== filterPosition) return false;
     if (filterRank && c.rank !== filterRank) return false;
+    if (filterClassman && c.classman !== filterClassman) return false;
     if (filterHg === "yes" && !c.is_honor_guard) return false;
     if (filterHg === "no" && c.is_honor_guard) return false;
     return true;
@@ -81,6 +84,7 @@ export default function CadetsTab() {
     setFilterUnit("");
     setFilterPosition("");
     setFilterRank("");
+    setFilterClassman("");
     setFilterHg("");
   }
 
@@ -119,7 +123,7 @@ export default function CadetsTab() {
             onClick={() => setShowFilters((v) => !v)}
             className="whitespace-nowrap rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Filters{filterUnit || filterPosition || filterRank || filterHg ? " •" : ""}
+            Filters{filterUnit || filterPosition || filterRank || filterClassman || filterHg ? " •" : ""}
           </button>
         </div>
 
@@ -148,6 +152,18 @@ export default function CadetsTab() {
               {RANKS.map((r) => (
                 <option key={r} value={r}>
                   {r}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterClassman}
+              onChange={(e) => setFilterClassman(e.target.value)}
+              className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            >
+              <option value="">All classmen</option>
+              {CLASSMEN.map((c) => (
+                <option key={c} value={c}>
+                  {CLASSMAN_LABELS[c]}
                 </option>
               ))}
             </select>
