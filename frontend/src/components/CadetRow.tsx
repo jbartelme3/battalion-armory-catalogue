@@ -1,5 +1,5 @@
 import type { Cadet } from "../types";
-import { CONDITION_TEXT_COLOR, formatHgRank, formatPosition } from "../types";
+import { CONDITION_TEXT_COLOR, formatClassmanShort, formatHgRank, formatPosition } from "../types";
 
 export default function CadetRow({ cadet, onSelect }: { cadet: Cadet; onSelect: () => void }) {
   return (
@@ -14,7 +14,8 @@ export default function CadetRow({ cadet, onSelect }: { cadet: Cadet; onSelect: 
       </span>
       <span className="flex flex-col items-end gap-0.5 text-right">
         <span className="text-xs text-slate-500">
-          Co. {cadet.company} · {formatPosition(cadet.position)}
+          Co. {cadet.company}
+          {formatClassmanShort(cadet.classman) ? ` · ${formatClassmanShort(cadet.classman)}` : ""} · {formatPosition(cadet.position)}
           {cadet.is_honor_guard && cadet.hg_rank
             ? ` · HG ${formatHgRank(cadet.hg_rank)}`
             : cadet.is_honor_guard

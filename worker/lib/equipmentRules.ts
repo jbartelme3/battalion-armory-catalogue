@@ -69,10 +69,28 @@ export const SUPPORT_EXEMPT_POSITIONS = [
   "Battalion Athletic Officer",
 ] as const;
 
+// Regimental "auxiliary" staff positions (everything on the Regimental Staff
+// other than the Sergeants Major and the Commander/Adjutant/Operations
+// Officer trio, which already live in the lists above). Senior-only,
+// Staff-Sergeant-rank billets — rifle-exempt like the rest of Regimental staff.
+export const REGIMENTAL_AUXILIARY_POSITIONS = [
+  "Regimental Supply Officer",
+  "Regimental Athletic Officer",
+  "Regimental Aide to Administration",
+  "Regimental Aide to Admissions",
+  "Regimental Aide to Academics",
+  "Regimental Aide to Spiritual Life",
+  "Regimental Honor Officer",
+  "Regimental Diversity Officer",
+  "Regimental Drum Major",
+  "Regimental Honor Captain",
+] as const;
+
 const EXEMPT_POSITIONS = new Set<string>([
   ...SWORD_BEARING_NCO_POSITIONS,
   ...COMMISSIONED_OFFICER_POSITIONS,
   ...SUPPORT_EXEMPT_POSITIONS,
+  ...REGIMENTAL_AUXILIARY_POSITIONS,
 ]);
 
 // The four Honor Guard leadership ranks. Cadets holding one of these are

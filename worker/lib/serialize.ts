@@ -9,6 +9,7 @@ export function serializeCadet(row: CadetRow) {
     company: row.company,
     position: row.position,
     rank: row.rank,
+    classman: row.classman,
     is_honor_guard: !!row.is_honor_guard,
     hg_rank: row.hg_rank,
   };

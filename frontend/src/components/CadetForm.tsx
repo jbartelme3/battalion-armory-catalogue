@@ -1,6 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError } from "../api/client";
-import { ALL_POSITIONS, HG_LEADERSHIP_RANKS, HG_LINE_RANKS, HG_RANK_ABBREVIATIONS, RANKS, RANK_ABBREVIATIONS } from "../types";
+import {
+  ALL_POSITIONS,
+  CLASSMEN,
+  CLASSMAN_LABELS,
+  HG_LEADERSHIP_RANKS,
+  HG_LINE_RANKS,
+  HG_RANK_ABBREVIATIONS,
+  PLATOON_SERGEANT_POSITION,
+  POSITION_CONSTRAINTS,
+  RANKS,
+  RANK_ABBREVIATIONS,
+  platoonSergeantAutoRank,
+  positionsForClassman,
+  ranksForClassman,
+} from "../types";
 import type { Cadet } from "../types";
 
 export interface CadetFormValues {
@@ -9,6 +23,7 @@ export interface CadetFormValues {
   company: Cadet["company"];
   position: string;
   rank: string | null;
+  classman: string | null;
   is_honor_guard: boolean;
   hg_rank: string | null;
 }
@@ -27,12 +42,28 @@ export default function CadetForm({
   const [firstName, setFirstName] = useState(initial?.first_name ?? "");
   const [lastName, setLastName] = useState(initial?.last_name ?? "");
   const [company, setCompany] = useState<Cadet["company"]>(initial?.company ?? "A");
+  const [classman, setClassman] = useState(initial?.classman ?? "");
   const [position, setPosition] = useState(initial?.position ?? "New Cadet");
   const [rank, setRank] = useState(initial?.rank ?? "New Cadet");
   const [isHonorGuard, setIsHonorGuard] = useState(initial?.is_honor_guard ?? false);
   const [hgRank, setHgRank] = useState(initial?.hg_rank ?? "");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Platoon Sergeant rank is dictated by classman (Junior -> Sergeant, Senior
+  // -> Staff Sergeant). Soft-guide: this auto-fills the rank, but the field
+  // below is still editable if there's a real exception.
+  useEffect(() => {
+    if (position === PLATOON_SERGEANT_POSITION) {
+      const autoRank = platoonSergeantAutoRank(classman || null);
+      if (autoRank) setRank(autoRank);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [position, classman]);
+
+  const positionRankConstraint = POSITION_CONSTRAINTS[position]?.ranks;
+  const availableRanks = ranksForClassman(classman || null, rank, positionRankConstraint);
+  const availablePositions = positionsForClassman(classman || null, position);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,6 +76,7 @@ export default function CadetForm({
         company,
         position,
         rank: rank || null,
+        classman: classman || null,
         is_honor_guard: isHonorGuard,
         hg_rank: isHonorGuard ? hgRank || null : null,
       });
@@ -89,18 +121,36 @@ export default function CadetForm({
           </select>
         </div>
         <div>
+          <label className="block text-xs font-medium text-slate-600">Classman</label>
+          <select
+            value={classman}
+            onChange={(e) => setClassman(e.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          >
+            <option value="">Not set</option>
+            {CLASSMEN.map((c) => (
+              <option key={c} value={c}>
+                {CLASSMAN_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className="block text-xs font-medium text-slate-600">Rank</label>
           <select
             value={rank}
             onChange={(e) => setRank(e.target.value)}
             className="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
           >
-            {RANKS.map((r) => (
+            {availableRanks.map((r) => (
               <option key={r} value={r}>
                 {r} ({RANK_ABBREVIATIONS[r]})
               </option>
             ))}
           </select>
+          {availableRanks.length < RANKS.length && (
+            <p className="mt-1 text-xs text-slate-400">Filtered to ranks typical for this classman.</p>
+          )}
         </div>
         <div className="col-span-2">
           <label className="block text-xs font-medium text-slate-600">Position</label>
@@ -109,12 +159,15 @@ export default function CadetForm({
             onChange={(e) => setPosition(e.target.value)}
             className="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
           >
-            {ALL_POSITIONS.map((p) => (
+            {availablePositions.map((p) => (
               <option key={p.label} value={p.label}>
                 {p.label} ({p.abbrev}){p.exempt ? " — rifle-exempt" : ""}
               </option>
             ))}
           </select>
+          {availablePositions.length < ALL_POSITIONS.length && (
+            <p className="mt-1 text-xs text-slate-400">Filtered to positions typical for this classman.</p>
+          )}
         </div>
       </div>
 

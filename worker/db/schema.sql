@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS cadets (
   company TEXT NOT NULL CHECK (company IN ('A', 'B', 'C')),
   position TEXT NOT NULL DEFAULT 'New Cadet',
   rank TEXT,
+  classman TEXT,
   is_honor_guard INTEGER NOT NULL DEFAULT 0 CHECK (is_honor_guard IN (0, 1)),
   hg_rank TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
