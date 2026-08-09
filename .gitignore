@@ -4,3 +4,7 @@ frontend/dist/
 .dev.vars
 *.log
 .DS_Store
+.claude/settings.local.json
+Battalion Armory Catalogue Website.docx
+CulverStudentHandbook.pdf
+Eagles+Wings+2025+NEW (1).pdf
