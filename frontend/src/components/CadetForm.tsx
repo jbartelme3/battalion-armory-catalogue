@@ -26,6 +26,7 @@ export interface CadetFormValues {
   classman: string | null;
   is_honor_guard: boolean;
   hg_rank: string | null;
+  student_id: string | null;
 }
 
 export default function CadetForm({
@@ -47,6 +48,7 @@ export default function CadetForm({
   const [rank, setRank] = useState(initial?.rank ?? "New Cadet");
   const [isHonorGuard, setIsHonorGuard] = useState(initial?.is_honor_guard ?? false);
   const [hgRank, setHgRank] = useState(initial?.hg_rank ?? "");
+  const [studentId, setStudentId] = useState(initial?.student_id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -79,6 +81,7 @@ export default function CadetForm({
         classman: classman || null,
         is_honor_guard: isHonorGuard,
         hg_rank: isHonorGuard ? hgRank || null : null,
+        student_id: studentId.trim() || null,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong.");
@@ -168,6 +171,18 @@ export default function CadetForm({
           {availablePositions.length < ALL_POSITIONS.length && (
             <p className="mt-1 text-xs text-slate-400">Filtered to positions typical for this classman.</p>
           )}
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs font-medium text-slate-600">Scan ID (for Rifle Pickup)</label>
+          <input
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            placeholder="Optional — links their ID card for the Rifle Pickup scanner"
+            className="mt-1 w-full max-w-xs rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            Leave blank to have it captured automatically the first time their ID is scanned and linked on Rifle Pickup.
+          </p>
         </div>
       </div>
 

@@ -330,7 +330,24 @@ export interface Cadet {
   classman: string | null;
   is_honor_guard: boolean;
   hg_rank: string | null;
+  student_id: string | null;
   rifle?: CadetRifle | null;
+}
+
+// A single checkout/return record from equipment_assignment_history — shown
+// on both the cadet profile's and the equipment item's "History" sections,
+// and on the Rifle Pickup activity feed. checked_in_at === null means the
+// assignment is still active (the item hasn't been returned yet).
+export interface HistoryEntry {
+  id: number;
+  equipment_id: number | null;
+  equipment_type: EquipmentType;
+  equipment_tag: string;
+  cadet_id: number | null;
+  cadet_name: string;
+  cadet_company: string;
+  checked_out_at: string;
+  checked_in_at: string | null;
 }
 
 export const CONDITION_TEXT_COLOR: Record<Condition, string> = {
@@ -361,6 +378,13 @@ export interface EquipmentItem {
   size: string | null;
   is_ps_rifle: boolean;
   is_black_sl_bayonet: boolean;
+}
+
+// D1's datetime('now') yields "YYYY-MM-DD HH:MM:SS" in UTC, not full ISO —
+// normalize to something the Date constructor parses reliably everywhere.
+export function parseSqliteUtc(sqliteUtc: string): Date {
+  const iso = sqliteUtc.includes("T") ? sqliteUtc : `${sqliteUtc.replace(" ", "T")}Z`;
+  return new Date(iso);
 }
 
 export interface CadetProfile extends Cadet {

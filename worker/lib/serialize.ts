@@ -1,4 +1,4 @@
-import type { CadetRow, EquipmentRow } from "../types";
+import type { CadetRow, EquipmentHistoryRow, EquipmentRow } from "../types";
 import { effectiveCondition, type EquipmentType } from "./equipmentRules";
 
 export function serializeCadet(row: CadetRow) {
@@ -12,6 +12,21 @@ export function serializeCadet(row: CadetRow) {
     classman: row.classman,
     is_honor_guard: !!row.is_honor_guard,
     hg_rank: row.hg_rank,
+    student_id: row.student_id,
+  };
+}
+
+export function serializeHistory(row: EquipmentHistoryRow) {
+  return {
+    id: row.id,
+    equipment_id: row.equipment_id,
+    equipment_type: row.equipment_type,
+    equipment_tag: row.equipment_tag,
+    cadet_id: row.cadet_id,
+    cadet_name: `${row.cadet_first_name} ${row.cadet_last_name}`,
+    cadet_company: row.cadet_company,
+    checked_out_at: row.checked_out_at,
+    checked_in_at: row.checked_in_at,
   };
 }
 
