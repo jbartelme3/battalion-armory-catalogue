@@ -105,7 +105,7 @@ export default function CadetProfile({ cadetId, onBack }: { cadetId: number; onB
             <p className="mt-0.5 text-sm text-slate-600">Classman: {formatClassman(profile.classman)}</p>
             {profile.is_honor_guard && (
               <p className="mt-1 text-sm font-medium text-blue-800">
-                Honor Guard{profile.hg_rank ? ` — ${formatHgRank(profile.hg_rank)}` : " — rank not set"}
+                Honor Guard{profile.hg_rank ? ` · ${formatHgRank(profile.hg_rank)}` : " · rank not set"}
               </p>
             )}
           </div>

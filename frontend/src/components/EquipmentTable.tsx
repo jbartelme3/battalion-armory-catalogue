@@ -166,7 +166,7 @@ function Row({ item, onChanged, onOpenDetail }: { item: EquipmentItem; onChanged
         )}
       </td>
       <td className="py-2 pr-3 text-slate-600">{item.owner_name ?? <span className="text-slate-400">Unassigned</span>}</td>
-      <td className="py-2 pr-3 text-slate-500">{item.owner_company ?? "—"}</td>
+      <td className="py-2 pr-3 text-slate-500">{item.owner_company ?? "–"}</td>
       {item.type === "bayonet" && (
         <td className="py-2 pr-3">
           <input

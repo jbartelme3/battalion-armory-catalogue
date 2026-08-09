@@ -42,7 +42,7 @@ export default function Login({ onSuccess }: { onSuccess: () => void }) {
           setLocked(false);
           setPassword("");
           setRemainingAttempts(null);
-          setNotice("Verified — you can try your password again.");
+          setNotice("Verified. You can try your password again.");
         }}
       />
     );
@@ -131,8 +131,8 @@ function LockedOut({ onVerified }: { onVerified: () => void }) {
       <form onSubmit={handleVerify} className="w-full max-w-sm rounded-lg bg-white p-8 shadow-xl">
         <h1 className="text-lg font-bold text-slate-900">Too many failed attempts</h1>
         <p className="mt-1 text-sm text-slate-500">
-          This address has been locked out after 5 incorrect passwords. A verification code has been emailed to the admin —
-          enter it below to keep trying.
+          This address has been locked out after 5 incorrect passwords. A verification code has been emailed to the admin.
+          Enter it below to keep trying.
         </p>
 
         <label className="mt-6 block text-sm font-medium text-slate-700" htmlFor="code">
