@@ -31,7 +31,7 @@ export default function EquipmentResultsTable({ items, onOpenDetail }: { items: 
               <ConditionBadge condition={item.condition} />
             </td>
             <td className="py-2 pr-3 text-slate-600">{item.owner_name ?? <span className="text-slate-400">Unassigned</span>}</td>
-            <td className="py-2 pr-3 text-slate-500">{item.owner_company ?? "—"}</td>
+            <td className="py-2 pr-3 text-slate-500">{item.owner_company ?? "–"}</td>
           </tr>
         ))}
       </tbody>

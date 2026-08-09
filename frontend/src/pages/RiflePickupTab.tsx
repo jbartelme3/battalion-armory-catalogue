@@ -93,7 +93,7 @@ export default function RiflePickupTab() {
         setUnmatchedScanId(null);
         break;
       case "unmatched":
-        setBanner({ kind: "warning", message: `No cadet is linked to scan “${result.scanned_id}” yet — look them up below.` });
+        setBanner({ kind: "warning", message: `No cadet is linked to scan “${result.scanned_id}” yet. Look them up below.` });
         setUnmatchedScanId(result.scanned_id);
         break;
     }

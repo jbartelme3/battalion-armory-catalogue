@@ -164,7 +164,7 @@ export default function CadetForm({
           >
             {availablePositions.map((p) => (
               <option key={p.label} value={p.label}>
-                {p.label} ({p.abbrev}){p.exempt ? " — rifle-exempt" : ""}
+                {p.label} ({p.abbrev}){p.exempt ? " · rifle-exempt" : ""}
               </option>
             ))}
           </select>
@@ -177,7 +177,7 @@ export default function CadetForm({
           <input
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
-            placeholder="Optional — links their ID card for the Rifle Pickup scanner"
+            placeholder="Optional: links their ID card for the Rifle Pickup scanner"
             className="mt-1 w-full max-w-xs rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
           />
           <p className="mt-1 text-xs text-slate-400">

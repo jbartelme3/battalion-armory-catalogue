@@ -118,7 +118,7 @@ export const RANK_ABBREVIATIONS: Record<string, string> = {
 };
 
 export function formatRank(rank: string | null): string {
-  if (!rank) return "—";
+  if (!rank) return "–";
   const abbrev = RANK_ABBREVIATIONS[rank];
   return abbrev ? `${rank} (${abbrev})` : rank;
 }
@@ -212,7 +212,7 @@ export const CLASSMAN_LABELS: Record<Classman, string> = {
 };
 
 export function formatClassman(classman: string | null): string {
-  if (!classman) return "—";
+  if (!classman) return "–";
   return CLASSMAN_LABELS[classman as Classman] ?? classman;
 }
 
