@@ -10,7 +10,7 @@ export type EquipmentRowWithOwner = EquipmentRow & {
 export type AssignmentResult = { ok: true; item: EquipmentRowWithOwner } | { ok: false; status: 400 | 404; error: string };
 
 function toCadetLike(cadet: CadetRow) {
-  return { position: cadet.position, is_honor_guard: !!cadet.is_honor_guard, hg_rank: cadet.hg_rank };
+  return { position: cadet.position, is_honor_guard: !!cadet.is_honor_guard, hg_rank: cadet.hg_rank, company: cadet.company };
 }
 
 const SELECT_WITH_OWNER_BY_ID = `
@@ -40,6 +40,7 @@ export async function performAssignment(DB: D1Database, itemId: number, cadetId:
       type: item.type as EquipmentType,
       is_ps_rifle: !!item.is_ps_rifle,
       is_black_sl_bayonet: !!item.is_black_sl_bayonet,
+      company: item.company,
     });
     if (error) return { ok: false, status: 400, error };
 

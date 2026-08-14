@@ -6,10 +6,12 @@ import { serializeCadet, serializeHistory } from "../lib/serialize";
 
 export const riflePickup = new Hono<{ Bindings: Env }>();
 
-// The trailing run of digits in a tag, e.g. "IR-001" -> 1, "IR-12" -> 12.
-// Tags with no digits sort last (Infinity) rather than erroring out.
+// The leading run of digits in a tag, e.g. "01A" -> 1, "12B" -> 12. Infantry
+// Rifle tags are numbered first, company letter last, so "lowest available"
+// means lowest leading number. Tags with no leading digits sort last
+// (Infinity) rather than erroring out.
 function numericTagRank(tag: string): number {
-  const match = tag.match(/(\d+)\s*$/);
+  const match = tag.match(/^(\d+)/);
   return match ? parseInt(match[1], 10) : Infinity;
 }
 
@@ -48,9 +50,9 @@ async function checkInOrOutInfantryRifle(DB: D1Database, cadet: CadetRow): Promi
 
   const isPs = cadet.position === PLATOON_SERGEANT_POSITION;
   const { results: candidates } = await DB.prepare(
-    "SELECT * FROM equipment_items WHERE type = 'infantry_rifle' AND owner_cadet_id IS NULL AND is_ps_rifle = ?",
+    "SELECT * FROM equipment_items WHERE type = 'infantry_rifle' AND owner_cadet_id IS NULL AND is_ps_rifle = ? AND company = ?",
   )
-    .bind(isPs ? 1 : 0)
+    .bind(isPs ? 1 : 0, cadet.company)
     .all<EquipmentRow>();
 
   const pick = candidates

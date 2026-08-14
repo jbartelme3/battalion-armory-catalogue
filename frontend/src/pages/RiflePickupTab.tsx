@@ -84,7 +84,7 @@ export default function RiflePickupTab() {
       case "none_available":
         setBanner({
           kind: "warning",
-          message: `No Green/Yellow Infantry Rifles left to issue ${result.cadet.first_name} ${result.cadet.last_name}.`,
+          message: `No Green/Yellow Company ${result.cadet.company} Infantry Rifles left to issue ${result.cadet.first_name} ${result.cadet.last_name}.`,
         });
         setUnmatchedScanId(null);
         break;

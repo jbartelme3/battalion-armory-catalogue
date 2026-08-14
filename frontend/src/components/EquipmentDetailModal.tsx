@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { cadetsApi, equipmentApi, ApiError } from "../api/client";
-import type { Cadet, Condition, EquipmentItem } from "../types";
+import type { Cadet, Condition, EquipmentItem, RifleCompany } from "../types";
 import {
   EQUIPMENT_TYPE_LABELS,
   PLATOON_SERGEANT_POSITION,
   SQUAD_LEADER_POSITION,
   formatPosition,
+  infantryRifleTag,
   isCadetEligibleForEquipmentType,
+  parseInfantryRifleTag,
   tagNumberPart,
   tagPrefixFor,
 } from "../types";
@@ -15,6 +17,13 @@ import TagInput from "./TagInput";
 import HistorySection from "./HistorySection";
 
 const CONDITIONS: Condition[] = ["green", "yellow", "red"];
+
+// Infantry Rifle tags parse their number back out of the "01A" scheme; every
+// other type strips its shared prefix as before.
+function initialTagNumber(item: EquipmentItem): string {
+  if (item.type === "infantry_rifle") return parseInfantryRifleTag(item.tag).number;
+  return tagNumberPart(item.type, item.tag);
+}
 
 export default function EquipmentDetailModal({
   item,
@@ -25,13 +34,14 @@ export default function EquipmentDetailModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
-  const [number, setNumber] = useState(tagNumberPart(item.type, item.tag));
+  const [number, setNumber] = useState(initialTagNumber(item));
   const [condition, setCondition] = useState<Condition>(item.manual_condition);
   const [hasSheath, setHasSheath] = useState(item.has_sheath ?? true);
   const [hasPompom, setHasPompom] = useState(item.has_pompom ?? true);
   const [size, setSize] = useState(item.size ?? "");
   const [isPsRifle, setIsPsRifle] = useState(item.is_ps_rifle);
   const [isBlackSl, setIsBlackSl] = useState(item.is_black_sl_bayonet);
+  const [company, setCompany] = useState<RifleCompany | "">(item.company ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -53,13 +63,14 @@ export default function EquipmentDetailModal({
     setSaving(true);
     try {
       await equipmentApi.update(item.id, {
-        tag: `${tagPrefixFor(item.type, isBlackSl)}${number.trim()}`,
+        tag: item.type === "infantry_rifle" ? infantryRifleTag(number, company as RifleCompany) : `${tagPrefixFor(item.type, isBlackSl)}${number.trim()}`,
         manual_condition: condition,
         has_sheath: item.type === "bayonet" ? hasSheath : undefined,
         has_pompom: item.type === "dress_cover" ? hasPompom : undefined,
         size: item.type === "dress_jacket" ? size : undefined,
         is_ps_rifle: item.type === "infantry_rifle" ? isPsRifle : undefined,
         is_black_sl_bayonet: item.type === "bayonet" ? isBlackSl : undefined,
+        company: item.type === "infantry_rifle" ? (company as RifleCompany) : undefined,
       });
       onChanged();
     } catch (err) {
@@ -100,7 +111,8 @@ export default function EquipmentDetailModal({
     .filter((c) => {
       if (item.type === "infantry_rifle") {
         const cadetIsPs = c.position === PLATOON_SERGEANT_POSITION;
-        return isPsRifle ? cadetIsPs : !cadetIsPs;
+        if (isPsRifle ? !cadetIsPs : cadetIsPs) return false;
+        return !company || c.company === company;
       }
       if (item.type === "bayonet") {
         const cadetIsSl = c.position === SQUAD_LEADER_POSITION;
@@ -126,6 +138,8 @@ export default function EquipmentDetailModal({
             onNumberChange={setNumber}
             isBlackSlBayonet={isBlackSl}
             onIsBlackSlBayonetChange={setIsBlackSl}
+            company={company}
+            onCompanyChange={setCompany}
             disabled={saving}
           />
 

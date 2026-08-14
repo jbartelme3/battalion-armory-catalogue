@@ -44,4 +44,5 @@ export interface EquipmentRow {
   size: string | null;
   is_ps_rifle: 0 | 1;
   is_black_sl_bayonet: 0 | 1;
+  company: "A" | "B" | "C" | null;
 }
