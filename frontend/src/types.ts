@@ -410,19 +410,15 @@ export function isCadetEligibleForEquipmentType(
   const hgLeadership = isHgLeadershipCadet(cadet);
   const rifleEligible = !battalionExempt && !hgLeadership;
 
-  if (cadet.is_honor_guard) {
-    switch (type) {
-      case "honor_guard_rifle":
-        return rifleEligible;
-      case "bayonet":
-        return !hgLeadership;
-      case "dress_jacket":
-      case "dress_cover":
-        return true;
-      case "infantry_rifle":
-        return false;
-    }
+  switch (type) {
+    case "infantry_rifle":
+      return rifleEligible;
+    case "honor_guard_rifle":
+      return cadet.is_honor_guard && rifleEligible;
+    case "bayonet":
+      return cadet.is_honor_guard && !hgLeadership;
+    case "dress_jacket":
+    case "dress_cover":
+      return cadet.is_honor_guard;
   }
-
-  return type === "infantry_rifle" ? rifleEligible : false;
 }
