@@ -133,32 +133,27 @@ export interface EligibleSlots {
 
 /**
  * Which equipment types a cadet should be assigned, per the doc's rules:
- * - Rifle (infantry or HG) eligible unless battalion-exempt or HG leadership.
+ * - Infantry Rifle eligible for every cadet unless battalion-exempt or HG
+ *   leadership. Being an Honor Guard member does NOT by itself exclude a
+ *   cadet from the Infantry Rifle: a line-rank Guardsman (e.g. a PFC in
+ *   both their regular position and the Honor Guard) carries both.
+ * - Honor Guard Rifle eligible for HG members who are not battalion-exempt
+ *   or HG leadership.
  * - Bayonet eligible for HG members who are not HG leadership.
  * - Jacket/Cover eligible for all HG members, regardless of exemptions.
- * - Non-HG cadets only ever get the Infantry Rifle (unless battalion-exempt).
+ * - Non-HG cadets never get Honor Guard equipment.
  */
 export function resolveEligibleSlots(cadet: CadetLike): EligibleSlots {
   const battalionExempt = isBattalionExempt(cadet);
   const hgLeadership = isHgLeadership(cadet);
   const rifleEligible = !battalionExempt && !hgLeadership;
 
-  if (cadet.is_honor_guard) {
-    return {
-      infantry_rifle: false,
-      honor_guard_rifle: rifleEligible,
-      bayonet: !hgLeadership,
-      dress_jacket: true,
-      dress_cover: true,
-    };
-  }
-
   return {
     infantry_rifle: rifleEligible,
-    honor_guard_rifle: false,
-    bayonet: false,
-    dress_jacket: false,
-    dress_cover: false,
+    honor_guard_rifle: cadet.is_honor_guard && rifleEligible,
+    bayonet: cadet.is_honor_guard && !hgLeadership,
+    dress_jacket: cadet.is_honor_guard,
+    dress_cover: cadet.is_honor_guard,
   };
 }
 
