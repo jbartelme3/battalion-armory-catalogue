@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { equipmentApi, ApiError } from "../api/client";
-import type { Condition, EquipmentItem, EquipmentType } from "../types";
-import { tagPrefixFor } from "../types";
+import type { Condition, EquipmentItem, EquipmentType, RifleCompany } from "../types";
+import { infantryRifleTag, tagPrefixFor } from "../types";
 import ConditionBadge from "./ConditionBadge";
 import EquipmentDetailModal from "./EquipmentDetailModal";
 import TagInput from "./TagInput";
@@ -221,6 +221,7 @@ function AddItemForm({ type, onCreated }: { type: EquipmentType; onCreated: () =
   const [size, setSize] = useState("");
   const [isPsRifle, setIsPsRifle] = useState(false);
   const [isBlackSl, setIsBlackSl] = useState(false);
+  const [company, setCompany] = useState<RifleCompany | "">("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -231,13 +232,14 @@ function AddItemForm({ type, onCreated }: { type: EquipmentType; onCreated: () =
     try {
       await equipmentApi.create({
         type,
-        tag: `${tagPrefixFor(type, isBlackSl)}${number.trim()}`,
+        tag: type === "infantry_rifle" ? infantryRifleTag(number, company as RifleCompany) : `${tagPrefixFor(type, isBlackSl)}${number.trim()}`,
         manual_condition: "green",
         has_sheath: type === "bayonet" ? true : undefined,
         has_pompom: type === "dress_cover" ? true : undefined,
         size: type === "dress_jacket" ? size : undefined,
         is_ps_rifle: type === "infantry_rifle" ? isPsRifle : undefined,
         is_black_sl_bayonet: type === "bayonet" ? isBlackSl : undefined,
+        company: type === "infantry_rifle" ? (company as RifleCompany) : undefined,
       });
       onCreated();
     } catch (err) {
@@ -255,6 +257,8 @@ function AddItemForm({ type, onCreated }: { type: EquipmentType; onCreated: () =
         onNumberChange={setNumber}
         isBlackSlBayonet={isBlackSl}
         onIsBlackSlBayonetChange={setIsBlackSl}
+        company={company}
+        onCompanyChange={setCompany}
         disabled={submitting}
       />
       {type === "dress_jacket" && (

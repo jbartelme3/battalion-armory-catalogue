@@ -113,6 +113,7 @@ export interface CadetLike {
   position: string;
   is_honor_guard: boolean;
   hg_rank: string | null;
+  company: string;
 }
 
 export function isBattalionExempt(cadet: CadetLike): boolean {
@@ -161,6 +162,7 @@ export interface AssignableEquipmentLike {
   type: EquipmentType;
   is_ps_rifle?: boolean;
   is_black_sl_bayonet?: boolean;
+  company?: string | null;
 }
 
 /**
@@ -181,6 +183,9 @@ export function validateAssignment(cadet: CadetLike, item: AssignableEquipmentLi
     const itemIsPs = !!item.is_ps_rifle;
     if (cadetIsPs && !itemIsPs) return "Platoon Sergeants must be assigned a PS Rifle.";
     if (!cadetIsPs && itemIsPs) return "PS Rifles can only be assigned to a Platoon Sergeant.";
+    if (item.company && item.company !== cadet.company) {
+      return `This rifle belongs to Company ${item.company}'s pool; the cadet is in Company ${cadet.company}.`;
+    }
   }
 
   if (item.type === "bayonet") {

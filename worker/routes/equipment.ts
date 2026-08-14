@@ -37,11 +37,12 @@ function serialize(row: RowWithOwner) {
     size: row.size,
     is_ps_rifle: !!row.is_ps_rifle,
     is_black_sl_bayonet: !!row.is_black_sl_bayonet,
+    company: row.company,
   };
 }
 
 function toCadetLike(cadet: CadetRow) {
-  return { position: cadet.position, is_honor_guard: !!cadet.is_honor_guard, hg_rank: cadet.hg_rank };
+  return { position: cadet.position, is_honor_guard: !!cadet.is_honor_guard, hg_rank: cadet.hg_rank, company: cadet.company };
 }
 
 const SELECT_WITH_OWNER = `
@@ -100,6 +101,7 @@ equipment.post("/", async (c) => {
     size?: string;
     is_ps_rifle?: boolean;
     is_black_sl_bayonet?: boolean;
+    company?: "A" | "B" | "C";
   }>();
 
   if (!EQUIPMENT_TYPES.includes(body.type)) {
@@ -108,11 +110,14 @@ equipment.post("/", async (c) => {
   if (!body.tag?.trim()) {
     return c.json({ error: "tag is required" }, 400);
   }
+  if (body.type === "infantry_rifle" && !["A", "B", "C"].includes(body.company ?? "")) {
+    return c.json({ error: "company is required for Infantry Rifles and must be A, B, or C" }, 400);
+  }
 
   const { DB } = c.env;
   const result = await DB.prepare(
-    `INSERT INTO equipment_items (type, tag, manual_condition, has_sheath, has_pompom, size, is_ps_rifle, is_black_sl_bayonet, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+    `INSERT INTO equipment_items (type, tag, manual_condition, has_sheath, has_pompom, size, is_ps_rifle, is_black_sl_bayonet, company, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
   )
     .bind(
       body.type,
@@ -123,6 +128,7 @@ equipment.post("/", async (c) => {
       body.type === "dress_jacket" ? body.size ?? null : null,
       body.type === "infantry_rifle" && body.is_ps_rifle ? 1 : 0,
       body.type === "bayonet" && body.is_black_sl_bayonet ? 1 : 0,
+      body.type === "infantry_rifle" ? body.company : null,
     )
     .run();
 
@@ -149,7 +155,12 @@ equipment.patch("/:id", async (c) => {
     size: string;
     is_ps_rifle: boolean;
     is_black_sl_bayonet: boolean;
+    company: "A" | "B" | "C";
   }>>();
+
+  if (existing.type === "infantry_rifle" && body.company !== undefined && !["A", "B", "C"].includes(body.company)) {
+    return c.json({ error: "company must be A, B, or C" }, 400);
+  }
 
   const merged = {
     tag: body.tag?.trim() ?? existing.tag,
@@ -181,10 +192,12 @@ equipment.patch("/:id", async (c) => {
             : 0
           : existing.is_black_sl_bayonet
         : 0,
+    company: existing.type === "infantry_rifle" ? body.company ?? existing.company : null,
   };
 
   // If the item is currently assigned, make sure the update (e.g. flipping the
-  // PS Rifle / Black SL Bayonet flag) doesn't break that assignment's validity.
+  // PS Rifle / Black SL Bayonet flag, or moving it to a different company's
+  // pool) doesn't break that assignment's validity.
   if (existing.owner_cadet_id !== null) {
     const owner = await DB.prepare("SELECT * FROM cadets WHERE id = ?").bind(existing.owner_cadet_id).first<CadetRow>();
     if (owner) {
@@ -192,13 +205,14 @@ equipment.patch("/:id", async (c) => {
         type: existing.type as EquipmentType,
         is_ps_rifle: !!merged.is_ps_rifle,
         is_black_sl_bayonet: !!merged.is_black_sl_bayonet,
+        company: merged.company,
       });
       if (error) return c.json({ error: `${error} Unassign this item first.` }, 400);
     }
   }
 
   await DB.prepare(
-    `UPDATE equipment_items SET tag = ?, manual_condition = ?, has_sheath = ?, has_pompom = ?, size = ?, is_ps_rifle = ?, is_black_sl_bayonet = ?, updated_at = datetime('now')
+    `UPDATE equipment_items SET tag = ?, manual_condition = ?, has_sheath = ?, has_pompom = ?, size = ?, is_ps_rifle = ?, is_black_sl_bayonet = ?, company = ?, updated_at = datetime('now')
      WHERE id = ?`,
   )
     .bind(
@@ -209,6 +223,7 @@ equipment.patch("/:id", async (c) => {
       merged.size,
       merged.is_ps_rifle,
       merged.is_black_sl_bayonet,
+      merged.company,
       id,
     )
     .run();

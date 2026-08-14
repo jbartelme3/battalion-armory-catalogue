@@ -35,12 +35,16 @@ CREATE TABLE IF NOT EXISTS equipment_items (
   size TEXT,
   is_ps_rifle INTEGER NOT NULL DEFAULT 0 CHECK (is_ps_rifle IN (0, 1)),
   is_black_sl_bayonet INTEGER NOT NULL DEFAULT 0 CHECK (is_black_sl_bayonet IN (0, 1)),
+  -- Which company's numbered pool this item belongs to (Infantry Rifles
+  -- only, e.g. tag "01A" -> company 'A'). NULL for every other type.
+  company TEXT CHECK (company IN ('A', 'B', 'C')),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_equipment_type ON equipment_items (type);
 CREATE INDEX IF NOT EXISTS idx_equipment_owner ON equipment_items (owner_cadet_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_company ON equipment_items (type, company, owner_cadet_id);
 
 -- One row per equipment checkout/return. Denormalized (equipment type/tag,
 -- cadet name/company snapshotted at the time) so accountability history

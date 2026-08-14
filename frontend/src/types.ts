@@ -23,10 +23,11 @@ export const EQUIPMENT_TYPE_ORDER: EquipmentType[] = [
 export const PLATOON_SERGEANT_POSITION = "Platoon Sergeant";
 export const SQUAD_LEADER_POSITION = "Squad Leader";
 
-// Fixed tag prefix per equipment type — users only ever enter the number that
-// follows. Bayonet has two prefixes depending on the Black SL Bayonet flag.
-export const TAG_PREFIXES: Record<EquipmentType, string> = {
-  infantry_rifle: "IR-",
+// Fixed tag prefix for every equipment type except Infantry Rifle, which
+// uses a company-suffix scheme instead (see infantryRifleTag below) — users
+// only ever enter the number that follows the prefix. Bayonet has two
+// prefixes depending on the Black SL Bayonet flag.
+export const TAG_PREFIXES: Record<Exclude<EquipmentType, "infantry_rifle">, string> = {
   honor_guard_rifle: "HGR-",
   bayonet: "BAY-",
   dress_cover: "DC-",
@@ -35,7 +36,7 @@ export const TAG_PREFIXES: Record<EquipmentType, string> = {
 
 export const BAYONET_TAG_PREFIX_BLACK_SL = "BSL-";
 
-export function tagPrefixFor(type: EquipmentType, isBlackSlBayonet?: boolean): string {
+export function tagPrefixFor(type: Exclude<EquipmentType, "infantry_rifle">, isBlackSlBayonet?: boolean): string {
   if (type === "bayonet" && isBlackSlBayonet) return BAYONET_TAG_PREFIX_BLACK_SL;
   return TAG_PREFIXES[type];
 }
@@ -43,12 +44,29 @@ export function tagPrefixFor(type: EquipmentType, isBlackSlBayonet?: boolean): s
 // Strips whichever known prefix (for this type) the tag starts with, leaving
 // just the number part for editing. Falls back to the raw tag if it doesn't
 // match any known prefix (e.g. legacy/custom tags).
-export function tagNumberPart(type: EquipmentType, tag: string): string {
+export function tagNumberPart(type: Exclude<EquipmentType, "infantry_rifle">, tag: string): string {
   const prefixes = type === "bayonet" ? [BAYONET_TAG_PREFIX_BLACK_SL, TAG_PREFIXES.bayonet] : [TAG_PREFIXES[type]];
   for (const prefix of prefixes) {
     if (tag.startsWith(prefix)) return tag.slice(prefix.length);
   }
   return tag;
+}
+
+export type RifleCompany = "A" | "B" | "C";
+
+// Infantry Rifle tags encode which company's numbered pool the physical
+// rifle belongs to as a trailing letter (e.g. "01A" is Company A's #1),
+// rather than the shared prefix scheme every other equipment type uses.
+export function infantryRifleTag(number: string, company: RifleCompany): string {
+  return `${number.trim()}${company}`;
+}
+
+// Splits an Infantry Rifle tag like "01A" back into its number and company
+// parts for editing. Falls back to no company on anything that doesn't end
+// in A/B/C (e.g. a legacy tag from before this scheme).
+export function parseInfantryRifleTag(tag: string): { number: string; company: RifleCompany | "" } {
+  const match = tag.match(/^(.*?)([ABC])$/);
+  return match ? { number: match[1], company: match[2] as RifleCompany } : { number: tag, company: "" };
 }
 
 // The only Honor Guard members who do NOT carry an Honor Guard Rifle (they're
@@ -378,6 +396,7 @@ export interface EquipmentItem {
   size: string | null;
   is_ps_rifle: boolean;
   is_black_sl_bayonet: boolean;
+  company: RifleCompany | null;
 }
 
 // D1's datetime('now') yields "YYYY-MM-DD HH:MM:SS" in UTC, not full ISO —
