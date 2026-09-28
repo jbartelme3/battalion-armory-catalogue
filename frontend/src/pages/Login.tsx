@@ -51,7 +51,7 @@ export default function Login({ onSuccess }: { onSuccess: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-lg bg-white p-8 shadow-xl">
-        <h1 className="text-lg font-bold text-slate-900">Infantry Battalion Armory Catalogue</h1>
+        <h1 className="text-lg font-bold text-slate-900">Infantry Battalion Catalogue</h1>
         <p className="mt-1 text-sm text-slate-500">Authorized personnel only. Enter the site password to continue.</p>
 
         <label className="mt-6 block text-sm font-medium text-slate-700" htmlFor="password">

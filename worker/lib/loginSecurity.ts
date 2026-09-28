@@ -164,10 +164,10 @@ async function sendVerificationEmail(env: LockoutEnv, code: string, ip: string):
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Armory Catalogue <onboarding@resend.dev>",
+        from: "Battalion Catalogue <onboarding@resend.dev>",
         to: [env.ALERT_EMAIL],
-        subject: "Armory Catalogue: 5 failed login attempts",
-        text: `5 failed password attempts were made on the Infantry Battalion Armory Catalogue from IP ${ip}.
+        subject: "Battalion Catalogue: 5 failed login attempts",
+        text: `5 failed password attempts were made on the Infantry Battalion Catalogue from IP ${ip}.
 
 Verification code: ${code}
 
