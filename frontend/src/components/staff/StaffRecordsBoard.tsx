@@ -18,6 +18,7 @@ export default function StaffRecordsBoard({ kindKey }: { kindKey: string }) {
   const [records, setRecords] = useState<StaffRecord[] | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [company, setCompany] = useState<"all" | "A" | "B" | "C">("all");
+  const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<StaffRecord | "new" | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,9 +44,11 @@ export default function StaffRecordsBoard({ kindKey }: { kindKey: string }) {
   // Morale reports and police areas are running logs; the rest have a
   // natural "done" state worth hiding by default.
   const hasActiveFilter = kind.key !== "police_areas" && kind.key !== "morale";
+  const q = query.trim().toLowerCase();
   const filtered = records.filter(
     (r) =>
       (!hasActiveFilter || showAll || isActive(kind, r.data)) &&
+      (!q || Object.values(r.data).some((v) => v !== null && String(v).toLowerCase().includes(q))) &&
       (company === "all" || !kind.companyField || r.data[kind.companyField] === company || r.data[kind.companyField] === null),
   );
   // Upcoming training reads best soonest-first; everything else newest-first.
@@ -92,6 +95,16 @@ export default function StaffRecordsBoard({ kindKey }: { kindKey: string }) {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
+        {records.length > 5 && (
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search…"
+            aria-label={`Search ${kind.label}`}
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 sm:w-48"
+          />
+        )}
         {kind.companyField && (
           <div className="flex overflow-hidden rounded-md border border-slate-300 text-xs">
             {(["all", "A", "B", "C"] as const).map((c) => (

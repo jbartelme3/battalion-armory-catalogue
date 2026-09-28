@@ -336,9 +336,40 @@ function Standings({ week }: { week: BannerWeek }) {
           {n}
         </p>
       ))}
+      {final && <CopyAnnouncement week={week} />}
       <p className="mt-2 text-xs text-slate-400">
         Points = sum of 12 category places. Lowest wins. Ties broken by ATVs, then Laundry, then BRC/DRC.
       </p>
+    </div>
+  );
+}
+
+// Ready-to-read text for announcing the banner at the formation or parade.
+function CopyAnnouncement({ week }: { week: BannerWeek }) {
+  const [copied, setCopied] = useState(false);
+  const s = week.announced!;
+  const order = [...BANNER_COMPANIES].sort((a, b) => s.places[a] - s.places[b]);
+  const winners = s.winners.map((c) => `Company ${c}`).join(" and ");
+  const text =
+    `The Battalion Banner for ${weekLabel(week)} ${s.winners.length > 1 ? "is shared by" : "goes to"} ${winners}. ` +
+    `Standings: ${order.map((c) => `Company ${c} ${ordinal(s.places[c])} (${s.scores[c]} pts)`).join(", ")}.`;
+  return (
+    <div className="mt-3 rounded-md bg-slate-50 p-3">
+      <p className="text-sm text-slate-700">{text}</p>
+      <button
+        onClick={() => {
+          navigator.clipboard
+            ?.writeText(text)
+            .then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            })
+            .catch(() => setCopied(false));
+        }}
+        className="mt-2 text-xs font-semibold text-slate-700 underline"
+      >
+        {copied ? "Copied" : "Copy announcement"}
+      </button>
     </div>
   );
 }

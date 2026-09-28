@@ -204,6 +204,19 @@ export default function CommanderTab() {
                 </tr>
               ))}
               <tr className="border-t border-slate-100 text-slate-700">
+                <td className="py-1">Latest morale</td>
+                {BANNER_COMPANIES.map((c) => {
+                  const latest = records.morale
+                    .filter((r) => r.data.company === c)
+                    .sort((a, b) => String(b.data.date).localeCompare(String(a.data.date)))[0];
+                  return (
+                    <td key={c} className="py-1 text-right" title={latest ? String(latest.data.rating) : undefined}>
+                      {latest ? `${String(latest.data.rating).charAt(0)}/5` : "–"}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr className="border-t border-slate-100 text-slate-700">
                 <td className="py-1">Unexcused absences (1SG)</td>
                 {BANNER_COMPANIES.map((c) => (
                   <td key={c} className="py-1 text-right">
@@ -223,7 +236,7 @@ export default function CommanderTab() {
               </tr>
             </tbody>
           </table>
-          <p className="mt-1 text-[11px] text-slate-400">From banner scores and First Sergeant's reports for {season ?? "this season"}.</p>
+          <p className="mt-1 text-[11px] text-slate-400">From banner scores, morale reports and First Sergeant's reports for {season ?? "this season"}.</p>
         </Card>
 
         <Card title="Orders & notices in effect" href="#/adjutant/orders">
