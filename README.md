@@ -1,4 +1,4 @@
-# Infantry Battalion Armory Catalogue
+# Infantry Battalion Catalogue
 
 A catalogue app for the Culver Military Academy Infantry Battalion's
 rifles and Honor Guard equipment.
