@@ -583,6 +583,24 @@ function WeekForm({
           <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
         </label>
       </div>
+      <div className="flex flex-wrap gap-2 text-xs">
+        {[
+          { label: "End next Sunday", day: 0 },
+          { label: "End next Wednesday", day: 3 },
+        ].map((o) => (
+          <button
+            key={o.day}
+            type="button"
+            onClick={() => setEnd(nextWeekday(start, o.day))}
+            className="rounded-md border border-slate-300 px-2.5 py-1 text-slate-700 hover:bg-slate-50"
+          >
+            {o.label}
+          </button>
+        ))}
+        <span className="self-center text-slate-400">
+          {start && end && end > start ? `${Math.round((Date.parse(end) - Date.parse(start)) / 86_400_000)} days` : ""}
+        </span>
+      </div>
       <div>
         <div className="text-sm font-medium text-slate-700">Company strength</div>
         <p className="text-xs text-slate-500">Headcount used for per-cadet scoring (Room Inspections, BSM BRC).</p>
@@ -617,6 +635,13 @@ function WeekForm({
       </div>
     </form>
   );
+}
+
+// First date after `iso` falling on `weekday` (0 = Sunday). From a Sunday,
+// "next Wednesday" is the 3-day week that switches into 2nd make.
+function nextWeekday(iso: string, weekday: number): string {
+  const day = new Date(`${iso}T00:00:00Z`).getUTCDay();
+  return addDays(iso, ((weekday - day + 7) % 7) || 7);
 }
 
 function FinalizePanel({ week, onConfirm, onCancel }: { week: BannerWeek; onConfirm: () => void; onCancel: () => void }) {
