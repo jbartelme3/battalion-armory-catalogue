@@ -1,4 +1,16 @@
-import type { Cadet, CadetProfile, EquipmentItem, EquipmentType, HistoryEntry } from "../types";
+import type {
+  BannerAuditEntry,
+  BannerCategory,
+  BannerEvent,
+  BannerEventInput,
+  BannerWeek,
+  BannerWeekInput,
+  Cadet,
+  CadetProfile,
+  EquipmentItem,
+  EquipmentType,
+  HistoryEntry,
+} from "../types";
 
 class ApiError extends Error {
   status: number;
@@ -96,4 +108,28 @@ export const riflePickupApi = {
       body: JSON.stringify({ cadet_id: cadetId, scanned_id: scannedId }),
     }),
   activity: (limit = 50) => request<HistoryEntry[]>(`/api/rifle-pickup/activity?limit=${limit}`),
+};
+
+// Every banner write carries the name of whoever is entering it; the worker
+// records it in the week's change history.
+export const bannerApi = {
+  weeks: () => request<{ categories: BannerCategory[]; weeks: BannerWeek[] }>("/api/banner/weeks"),
+  week: (id: number) =>
+    request<{ categories: BannerCategory[]; week: BannerWeek; events: BannerEvent[]; audit: BannerAuditEntry[] }>(
+      `/api/banner/weeks/${id}`,
+    ),
+  createWeek: (data: BannerWeekInput, actor: string) =>
+    request<BannerWeek>("/api/banner/weeks", { method: "POST", body: JSON.stringify({ ...data, actor }) }),
+  updateWeek: (id: number, data: BannerWeekInput, actor: string) =>
+    request<BannerWeek>(`/api/banner/weeks/${id}`, { method: "PATCH", body: JSON.stringify({ ...data, actor }) }),
+  addEvent: (weekId: number, data: BannerEventInput, actor: string) =>
+    request<BannerEvent>(`/api/banner/weeks/${weekId}/events`, { method: "POST", body: JSON.stringify({ ...data, actor }) }),
+  updateEvent: (id: number, data: BannerEventInput, actor: string) =>
+    request<BannerEvent>(`/api/banner/events/${id}`, { method: "PATCH", body: JSON.stringify({ ...data, actor }) }),
+  deleteEvent: (id: number, actor: string) =>
+    request<void>(`/api/banner/events/${id}`, { method: "DELETE", body: JSON.stringify({ actor }) }),
+  finalize: (id: number, actor: string) =>
+    request<BannerWeek>(`/api/banner/weeks/${id}/finalize`, { method: "POST", body: JSON.stringify({ actor }) }),
+  reopen: (id: number, actor: string, reason: string) =>
+    request<BannerWeek>(`/api/banner/weeks/${id}/reopen`, { method: "POST", body: JSON.stringify({ actor, reason }) }),
 };

@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import CadetsTab from "./pages/CadetsTab";
 import EquipmentTab from "./pages/EquipmentTab";
 import RiflePickupTab from "./pages/RiflePickupTab";
+import BannerWeekTab from "./pages/BannerWeekTab";
+import BannerSeasonTab from "./pages/BannerSeasonTab";
 
 type SubTab = { id: string; label: string; render: () => JSX.Element };
 
@@ -15,7 +17,14 @@ const SECTIONS: Section[] = [
   { id: "commander", label: "Commander", subtabs: [] },
   { id: "adjutant", label: "Adjutant", subtabs: [] },
   { id: "operations", label: "Operations Officer", subtabs: [] },
-  { id: "sergeant-major", label: "Sergeant Major", subtabs: [] },
+  {
+    id: "sergeant-major",
+    label: "Sergeant Major",
+    subtabs: [
+      { id: "banner", label: "Banner", render: () => <BannerWeekTab /> },
+      { id: "season", label: "Season", render: () => <BannerSeasonTab /> },
+    ],
+  },
   { id: "supply", label: "Supply", subtabs: [] },
   {
     id: "armorer",

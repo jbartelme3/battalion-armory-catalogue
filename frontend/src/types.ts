@@ -441,3 +441,93 @@ export function isCadetEligibleForEquipmentType(
       return cadet.is_honor_guard;
   }
 }
+
+// ---- Battalion Banner (Sergeant Major) -------------------------------------
+// Shapes returned by /api/banner. Scoring happens in the worker
+// (worker/lib/bannerScoring.ts); the frontend only displays results.
+
+export type BannerCompany = "A" | "B" | "C";
+export const BANNER_COMPANIES: BannerCompany[] = ["A", "B", "C"];
+
+export type PerCompany<T> = Record<BannerCompany, T>;
+
+export interface BannerCategory {
+  key: string;
+  label: string;
+  perCadet: boolean;
+  hint?: string;
+}
+
+export interface BannerCategoryResult {
+  key: string;
+  label: string;
+  perCadet: boolean;
+  eventCount: number;
+  totals: PerCompany<number>;
+  ranks: PerCompany<number>;
+}
+
+export interface BannerWeekResult {
+  categories: BannerCategoryResult[];
+  scores: PerCompany<number>;
+  places: PerCompany<number>;
+  winners: BannerCompany[];
+  tiebreakNotes: string[];
+}
+
+export interface BannerAnnounced {
+  scores: PerCompany<number>;
+  places: PerCompany<number>;
+  winners: BannerCompany[];
+  source: "app" | "spreadsheet";
+}
+
+export interface BannerWeek {
+  id: number;
+  start_date: string;
+  end_date: string;
+  strengths: PerCompany<number>;
+  status: "open" | "final";
+  finalized_at: string | null;
+  finalized_by: string | null;
+  announced: BannerAnnounced | null;
+  result: BannerWeekResult;
+  discrepancy: string | null;
+}
+
+export interface BannerEvent {
+  id: number;
+  category: string;
+  event_date: string;
+  gigs: PerCompany<number>;
+  inspected: PerCompany<number | null>;
+  note: string | null;
+  entered_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BannerAuditEntry {
+  id: number;
+  event_id: number | null;
+  action: string;
+  actor: string;
+  reason: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface BannerEventInput {
+  category: string;
+  event_date: string;
+  gigs: PerCompany<number | string>;
+  inspected: PerCompany<number | string | null>;
+  note: string;
+}
+
+export interface BannerWeekInput {
+  start_date: string;
+  end_date: string;
+  strengths: PerCompany<number>;
+}
