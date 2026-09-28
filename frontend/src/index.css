@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Printed pages: plain white, no page chrome (see print:hidden in components). */
+@media print {
+  body,
+  .bg-slate-100 {
+    background: #fff !important;
+  }
+}

@@ -69,7 +69,7 @@ export default function StaffRecordsBoard({ kindKey }: { kindKey: string }) {
           <button
             onClick={() => setEditing("new")}
             disabled={!canWrite}
-            className="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+            className="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50 print:hidden"
           >
             + Add
           </button>
@@ -94,7 +94,7 @@ export default function StaffRecordsBoard({ kindKey }: { kindKey: string }) {
         />
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
         {records.length > 5 && (
           <input
             type="search"

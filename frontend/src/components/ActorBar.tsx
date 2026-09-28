@@ -30,7 +30,7 @@ export default function ActorBar({ actor, onChange }: { actor: string; onChange:
 
   if (!editing) {
     return (
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-500 print:hidden">
         Recording as <span className="font-semibold text-slate-700">{actor}</span> ·{" "}
         <button onClick={() => setEditing(true)} className="underline hover:text-slate-800">
           change
@@ -47,7 +47,7 @@ export default function ActorBar({ actor, onChange }: { actor: string; onChange:
         onChange(draft.trim());
         setEditing(false);
       }}
-      className="rounded-lg border border-slate-300 bg-white p-3"
+      className="rounded-lg border border-slate-300 bg-white p-3 print:hidden"
     >
       <label className="block text-sm font-medium text-slate-700" htmlFor="banner-actor">
         Your name

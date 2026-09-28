@@ -133,13 +133,13 @@ export default function App() {
           <a href="#/" className="text-base font-bold text-slate-900">
             Infantry Battalion Catalogue
           </a>
-          <button onClick={handleLogout} className="text-sm text-slate-500 hover:text-slate-800">
+          <button onClick={handleLogout} className="text-sm text-slate-500 hover:text-slate-800 print:hidden">
             Log out
           </button>
         </div>
         {section && (
           <div className="mx-auto max-w-5xl px-4">
-            <div className="flex items-center gap-2 pb-2 text-sm">
+            <div className="flex items-center gap-2 pb-2 text-sm print:hidden">
               <a href="#/" className="text-slate-500 hover:text-slate-800">
                 ← Home
               </a>
@@ -147,7 +147,7 @@ export default function App() {
               <span className="font-semibold text-slate-900">{section.label}</span>
             </div>
             {section.subtabs.length > 0 && (
-              <nav className="flex gap-1 overflow-x-auto">
+              <nav className="flex gap-1 overflow-x-auto print:hidden">
                 {section.subtabs.map((t) => (
                   <a
                     key={t.id}
