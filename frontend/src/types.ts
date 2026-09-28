@@ -561,3 +561,81 @@ export interface BannerWeekInput {
   end_date: string;
   strengths: PerCompany<number>;
 }
+
+// ---- Staff sections (Adjutant, Operations Officer, Supply) -------------------
+// Record types are defined in worker/lib/staffKinds.ts and fetched from
+// /api/staff/kinds, so forms and lists render from one definition.
+
+export type StaffFieldType = "text" | "textarea" | "date" | "datetime" | "number" | "select" | "company";
+
+export interface StaffField {
+  key: string;
+  label: string;
+  type: StaffFieldType;
+  required?: boolean;
+  options?: string[];
+  placeholder?: string;
+  hint?: string;
+}
+
+export interface StaffKind {
+  key: string;
+  section: "commander" | "adjutant" | "operations" | "supply" | "sergeant-major";
+  label: string;
+  description: string;
+  fields: StaffField[];
+  titleField: string;
+  dateField?: string;
+  companyField?: string;
+  statusField?: string;
+  openStatuses?: string[];
+}
+
+export type StaffData = Record<string, string | number | null>;
+
+export interface StaffRecord {
+  id: number;
+  kind: string;
+  data: StaffData;
+  created_by: string;
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffAuditEntry {
+  id: number;
+  action: string;
+  actor: string;
+  before: StaffData | null;
+  after: StaffData | null;
+  created_at: string;
+}
+
+// ---- New Cadet System (Adjutant) ----------------------------------------------
+
+export const NCS_PHASES: Record<number, string> = {
+  1: "I · Orientation",
+  2: "II · Basic Formation",
+  3: "III · Advanced Formation",
+  4: "IV · Boards",
+  5: "V · Recognition",
+};
+
+export interface NcsProgress {
+  tracked: boolean;
+  phase: number;
+  black_striper: boolean;
+  specialty_test_date: string | null;
+  boards_book_date: string | null;
+  boards_invited_date: string | null;
+  boards_passed_date: string | null;
+  notes: string | null;
+  updated_by: string | null;
+  updated_at: string | null;
+}
+
+export interface NcsEntry {
+  cadet: { id: number; first_name: string; last_name: string; company: "A" | "B" | "C"; rank: string | null; position: string };
+  progress: NcsProgress;
+}

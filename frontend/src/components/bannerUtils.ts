@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { BannerWeek } from "../types";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -77,27 +76,4 @@ export function formatTotal(n: number, perCadet: boolean): string {
 export function effectiveStandings(week: BannerWeek) {
   if (week.status === "final" && week.announced) return week.announced;
   return week.result;
-}
-
-// Name recorded against every banner change. Remembered per browser so the
-// Sergeant Major (or a Bat Staff substitute) only types it once.
-const ACTOR_KEY = "banner.actorName";
-
-export function useActorName(): [string, (name: string) => void] {
-  const [name, setName] = useState<string>(() => {
-    try {
-      return localStorage.getItem(ACTOR_KEY) ?? "";
-    } catch {
-      return "";
-    }
-  });
-  function save(next: string) {
-    setName(next);
-    try {
-      localStorage.setItem(ACTOR_KEY, next);
-    } catch {
-      // Storage unavailable (private mode); the name still lasts this visit.
-    }
-  }
-  return [name, save];
 }

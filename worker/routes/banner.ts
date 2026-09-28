@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "../types";
 import { BANNER_CATEGORIES, COMPANIES, scoreWeek, type Company, type WeekResult } from "../lib/bannerScoring";
+import { validActor } from "../lib/actor";
 
 export const banner = new Hono<{ Bindings: Env }>();
 
@@ -70,12 +71,6 @@ const DAY_MS = 86_400_000;
 
 function daysBetween(start: string, end: string): number {
   return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY_MS;
-}
-
-function validActor(actor: unknown): string | null {
-  if (typeof actor !== "string") return null;
-  const trimmed = actor.trim();
-  return trimmed && trimmed.length <= 60 ? trimmed : null;
 }
 
 function describeDiscrepancy(announced: Announced | null, result: WeekResult): string | null {

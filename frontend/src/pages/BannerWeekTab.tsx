@@ -3,6 +3,7 @@ import { bannerApi } from "../api/client";
 import type { BannerAuditEntry, BannerCategory, BannerCompany, BannerEvent, BannerWeek, BannerWeekInput } from "../types";
 import { BANNER_COMPANIES } from "../types";
 import BannerEventForm from "../components/BannerEventForm";
+import ActorBar, { useActorName } from "../components/ActorBar";
 import {
   addDays,
   dayOptionLabel,
@@ -10,7 +11,6 @@ import {
   formatTotal,
   ordinal,
   todayIso,
-  useActorName,
   weekLabel,
 } from "../components/bannerUtils";
 
@@ -294,51 +294,6 @@ export default function BannerWeekTab() {
         </>
       )}
     </div>
-  );
-}
-
-function ActorBar({ actor, onChange }: { actor: string; onChange: (name: string) => void }) {
-  const [editing, setEditing] = useState(!actor);
-  const [draft, setDraft] = useState(actor);
-
-  if (!editing) {
-    return (
-      <p className="text-xs text-slate-500">
-        Recording as <span className="font-semibold text-slate-700">{actor}</span> ·{" "}
-        <button onClick={() => setEditing(true)} className="underline hover:text-slate-800">
-          change
-        </button>
-      </p>
-    );
-  }
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!draft.trim()) return;
-        onChange(draft.trim());
-        setEditing(false);
-      }}
-      className="rounded-lg border border-slate-300 bg-white p-3"
-    >
-      <label className="block text-sm font-medium text-slate-700" htmlFor="banner-actor">
-        Your name
-      </label>
-      <p className="text-xs text-slate-500">Saved with every score you enter or change, so the history shows who did what.</p>
-      <div className="mt-2 flex gap-2">
-        <input
-          id="banner-actor"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="e.g. BSM Bartelme"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-        />
-        <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-          Save
-        </button>
-      </div>
-    </form>
   );
 }
 

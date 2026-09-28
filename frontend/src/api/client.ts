@@ -11,6 +11,11 @@ import type {
   EquipmentItem,
   EquipmentType,
   HistoryEntry,
+  NcsEntry,
+  StaffAuditEntry,
+  StaffData,
+  StaffKind,
+  StaffRecord,
 } from "../types";
 
 class ApiError extends Error {
@@ -134,4 +139,22 @@ export const bannerApi = {
   gigs: () => request<BannerGigRecord[]>("/api/banner/gigs"),
   reopen: (id: number, actor: string, reason: string) =>
     request<BannerWeek>(`/api/banner/weeks/${id}/reopen`, { method: "POST", body: JSON.stringify({ actor, reason }) }),
+};
+
+export const staffApi = {
+  kinds: () => request<StaffKind[]>("/api/staff/kinds"),
+  list: (kind: string) => request<StaffRecord[]>(`/api/staff/list/${kind}`),
+  create: (kind: string, data: StaffData, actor: string) =>
+    request<StaffRecord>(`/api/staff/list/${kind}`, { method: "POST", body: JSON.stringify({ data, actor }) }),
+  update: (id: number, data: StaffData, actor: string) =>
+    request<StaffRecord>(`/api/staff/records/${id}`, { method: "PATCH", body: JSON.stringify({ data, actor }) }),
+  remove: (id: number, actor: string) =>
+    request<void>(`/api/staff/records/${id}`, { method: "DELETE", body: JSON.stringify({ actor }) }),
+  history: (id: number) => request<StaffAuditEntry[]>(`/api/staff/records/${id}/history`),
+};
+
+export const ncsApi = {
+  list: () => request<NcsEntry[]>("/api/ncs"),
+  update: (cadetId: number, data: Omit<NcsEntry["progress"], "tracked" | "updated_by" | "updated_at">, actor: string) =>
+    request<NcsEntry>(`/api/ncs/${cadetId}`, { method: "PUT", body: JSON.stringify({ ...data, actor }) }),
 };

@@ -6,6 +6,8 @@ import { cadets } from "./routes/cadets";
 import { equipment } from "./routes/equipment";
 import { riflePickup } from "./routes/riflePickup";
 import { banner } from "./routes/banner";
+import { staff } from "./routes/staff";
+import { ncs } from "./routes/ncs";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -73,6 +75,8 @@ app.route("/api/cadets", cadets);
 app.route("/api/equipment", equipment);
 app.route("/api/rifle-pickup", riflePickup);
 app.route("/api/banner", banner);
+app.route("/api/staff", staff);
+app.route("/api/ncs", ncs);
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
