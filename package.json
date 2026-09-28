@@ -20,7 +20,8 @@
     "db:migrate:banner-gigs:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0005_banner_named_gigs.sql",
     "db:migrate:staff:local": "wrangler d1 execute battalion-armory --local --file=worker/db/migrations/0006_staff_sections.sql",
     "db:migrate:staff:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0006_staff_sections.sql",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test \"tests/*.test.ts\""
   },
   "dependencies": {
     "hono": "^4.6.14",
