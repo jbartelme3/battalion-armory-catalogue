@@ -3,6 +3,7 @@ import { bannerApi } from "../api/client";
 import type { BannerCompany, BannerWeek } from "../types";
 import { BANNER_COMPANIES } from "../types";
 import { effectiveStandings, seasonOf, weekLabel } from "../components/bannerUtils";
+import { downloadCsv } from "../components/csv";
 
 // Consecutive most-recent finalized weeks each company won (shared counts).
 function currentStreaks(finals: BannerWeek[]): Record<BannerCompany, number> {
@@ -123,6 +124,32 @@ export default function BannerSeasonTab() {
           );
         })}
       </div>
+      <button
+        onClick={() =>
+          downloadCsv(
+            `banner-${season}.csv`,
+            ["Week start", "Week end", "Status", "Banner", "CA pts", "CB pts", "CC pts", "CA place", "CB place", "CC place"],
+            inSeason.map((w) => {
+              const s = effectiveStandings(w);
+              return [
+                w.start_date,
+                w.end_date,
+                w.status,
+                w.status === "open" ? "" : s.winners.map((c) => `C${c}`).join(" & "),
+                s.scores.A,
+                s.scores.B,
+                s.scores.C,
+                s.places.A,
+                s.places.B,
+                s.places.C,
+              ];
+            }),
+          )
+        }
+        className="text-xs text-slate-500 underline hover:text-slate-800"
+      >
+        Export season as CSV
+      </button>
       {inSeason.some((w) => w.discrepancy) && (
         <p className="text-xs text-amber-700">
           ⚠ The recorded result differs from a recalculation of the entered scores. Open that week on the Banner tab for

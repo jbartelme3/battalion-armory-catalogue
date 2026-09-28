@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { staffApi } from "../../api/client";
 import type { StaffAuditEntry, StaffData, StaffField, StaffKind, StaffRecord } from "../../types";
 import ActorBar, { useActorName } from "../ActorBar";
+import { downloadCsv } from "../csv";
+import { todayIso } from "../bannerUtils";
 import { TONE_CLASSES, emptyData, formatValue, isActive, loadKinds, quickAction, recordBadges } from "./staffUtils";
 
 const inputClass =
@@ -112,6 +114,20 @@ export default function StaffRecordsBoard({ kindKey }: { kindKey: string }) {
         <span className="ml-auto text-xs text-slate-400">
           {visible.length} of {records.length}
         </span>
+        {visible.length > 0 && (
+          <button
+            onClick={() =>
+              downloadCsv(
+                `${kind.key}-${todayIso()}.csv`,
+                [...kind.fields.map((f) => f.label), "Added by", "Last changed by"],
+                visible.map((r) => [...kind.fields.map((f) => r.data[f.key]), r.created_by, r.updated_by]),
+              )
+            }
+            className="text-xs text-slate-500 underline hover:text-slate-800"
+          >
+            Export CSV
+          </button>
+        )}
       </div>
 
       {visible.length === 0 ? (

@@ -147,134 +147,136 @@ export default function CommanderTab() {
         )}
       </Card>
 
-      {current && (
-        <Card title="Battalion Banner" href="#/sergeant-major/banner">
-          <p className="text-xs text-slate-500">
-            {current.status === "open" ? "This week so far" : "Latest week"} · {weekLabel(current)}
-          </p>
-          <div className="mt-1 grid grid-cols-3 gap-2 text-center">
-            {BANNER_COMPANIES.map((c) => {
-              const s = effectiveStandings(current);
-              return (
-                <div key={c} className={`rounded-md py-2 ${s.places[c] === 1 ? "bg-amber-100" : "bg-slate-50"}`}>
-                  <div className="text-xs text-slate-500">Company {c}</div>
-                  <div className="text-base font-bold text-slate-900">{ordinal(s.places[c])}</div>
-                  <div className="text-[11px] text-slate-500">
-                    {s.scores[c]} pts · {wins[c]} banner{wins[c] === 1 ? "" : "s"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {lastFinal && (
-            <p className="mt-2 text-xs text-slate-600">
-              Last banner: <span className="font-semibold">{effectiveStandings(lastFinal).winners.map((c) => `Company ${c}`).join(" & ")}</span> (
-              {weekLabel(lastFinal)})
+      <div className="grid gap-4 md:grid-cols-2">
+        {current && (
+          <Card title="Battalion Banner" href="#/sergeant-major/banner">
+            <p className="text-xs text-slate-500">
+              {current.status === "open" ? "This week so far" : "Latest week"} · {weekLabel(current)}
             </p>
-          )}
-        </Card>
-      )}
+            <div className="mt-1 grid grid-cols-3 gap-2 text-center">
+              {BANNER_COMPANIES.map((c) => {
+                const s = effectiveStandings(current);
+                return (
+                  <div key={c} className={`rounded-md py-2 ${s.places[c] === 1 ? "bg-amber-100" : "bg-slate-50"}`}>
+                    <div className="text-xs text-slate-500">Company {c}</div>
+                    <div className="text-base font-bold text-slate-900">{ordinal(s.places[c])}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {s.scores[c]} pts · {wins[c]} banner{wins[c] === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {lastFinal && (
+              <p className="mt-2 text-xs text-slate-600">
+                Last banner: <span className="font-semibold">{effectiveStandings(lastFinal).winners.map((c) => `Company ${c}`).join(" & ")}</span> (
+                {weekLabel(lastFinal)})
+              </p>
+            )}
+          </Card>
+        )}
 
-      <Card title="Discipline & accountability this season" href="#/sergeant-major/trends">
-        <table className="w-full text-sm" style={{ fontVariantNumeric: "tabular-nums" }}>
-          <thead>
-            <tr className="text-xs text-slate-500">
-              <th className="py-1 text-left font-semibold" />
-              {BANNER_COMPANIES.map((c) => (
-                <th key={c} className="w-14 py-1 text-right font-semibold">
-                  C{c}
-                </th>
+        <Card title="Discipline & accountability this season" href="#/sergeant-major/trends">
+          <table className="w-full text-sm" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <thead>
+              <tr className="text-xs text-slate-500">
+                <th className="py-1 text-left font-semibold" />
+                {BANNER_COMPANIES.map((c) => (
+                  <th key={c} className="w-14 py-1 text-right font-semibold">
+                    C{c}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { key: "atvs", label: "After-taps violations" },
+                { key: "accountability", label: "Late / absent (pts)" },
+                { key: "bed_checks", label: "Bed check gigs" },
+              ].map((row) => (
+                <tr key={row.key} className="border-t border-slate-100 text-slate-700">
+                  <td className="py-1">{row.label}</td>
+                  {BANNER_COMPANIES.map((c) => (
+                    <td key={c} className="py-1 text-right">
+                      {Math.round(sumCategory(row.key, c) * 10) / 10}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { key: "atvs", label: "After-taps violations" },
-              { key: "accountability", label: "Late / absent (pts)" },
-              { key: "bed_checks", label: "Bed check gigs" },
-            ].map((row) => (
-              <tr key={row.key} className="border-t border-slate-100 text-slate-700">
-                <td className="py-1">{row.label}</td>
+              <tr className="border-t border-slate-100 text-slate-700">
+                <td className="py-1">Unexcused absences (1SG)</td>
                 {BANNER_COMPANIES.map((c) => (
                   <td key={c} className="py-1 text-right">
-                    {Math.round(sumCategory(row.key, c) * 10) / 10}
+                    {records.first_sgt_reports
+                      .filter((r) => r.data.company === c && seasonOf({ start_date: String(r.data.date) }) === season)
+                      .reduce((sum, r) => sum + Number(r.data.unexcused), 0)}
                   </td>
                 ))}
               </tr>
-            ))}
-            <tr className="border-t border-slate-100 text-slate-700">
-              <td className="py-1">Unexcused absences (1SG)</td>
-              {BANNER_COMPANIES.map((c) => (
-                <td key={c} className="py-1 text-right">
-                  {records.first_sgt_reports
-                    .filter((r) => r.data.company === c && seasonOf({ start_date: String(r.data.date) }) === season)
-                    .reduce((sum, r) => sum + Number(r.data.unexcused), 0)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-t border-slate-100 text-slate-500">
-              <td className="py-1">Strength (roster)</td>
-              {BANNER_COMPANIES.map((c) => (
-                <td key={c} className="py-1 text-right">
-                  {strength[c]}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-        <p className="mt-1 text-[11px] text-slate-400">From banner scores and First Sergeant's reports for {season ?? "this season"}.</p>
-      </Card>
-
-      <Card title="Orders & notices in effect" href="#/adjutant/orders">
-        {activeOrders.length === 0 ? (
-          <p className="text-sm text-slate-500">None in effect.</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {activeOrders.map((r) => (
-              <li key={r.id} className="text-sm">
-                <span className="font-semibold text-slate-800">{String(r.data.title)}</span>
-                <span className="text-xs text-slate-500">
-                  {" "}
-                  · {r.data.audience ? `C${r.data.audience}` : "Battalion"}
-                  {r.data.expires ? ` · until ${formatDay(String(r.data.expires))}` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {upcomingOrders.length > 0 && <p className="mt-1 text-xs text-blue-700">{upcomingOrders.length} more take effect soon.</p>}
-      </Card>
-
-      <Card title="Training this week" href="#/operations/training">
-        {upcomingTraining.length === 0 ? (
-          <p className="text-sm text-slate-500">Nothing scheduled in the next 7 days.</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {upcomingTraining.map((r) => (
-              <li key={r.id} className="text-sm text-slate-800">
-                <span className="text-xs text-slate-500">
-                  {formatDay(String(r.data.date))}
-                  {r.data.time ? ` ${r.data.time}` : ""} ·{" "}
-                </span>
-                {String(r.data.title)} <span className="text-xs text-slate-500">({String(r.data.event)})</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Card title="Supply" href="#/supply/work-orders">
-          <p className="text-2xl font-bold text-slate-900">{openWorkOrders.length}</p>
-          <p className="text-xs text-slate-500">open work order{openWorkOrders.length === 1 ? "" : "s"}</p>
+              <tr className="border-t border-slate-100 text-slate-500">
+                <td className="py-1">Strength (roster)</td>
+                {BANNER_COMPANIES.map((c) => (
+                  <td key={c} className="py-1 text-right">
+                    {strength[c]}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-1 text-[11px] text-slate-400">From banner scores and First Sergeant's reports for {season ?? "this season"}.</p>
         </Card>
-        <Card title="New cadets" href="#/adjutant/ncs">
-          <p className="text-2xl font-bold text-slate-900">
-            {invited}
-            <span className="text-sm font-normal text-slate-500">/{ncs.length}</span>
-          </p>
-          <p className="text-xs text-slate-500">invited to boards</p>
+
+        <Card title="Orders & notices in effect" href="#/adjutant/orders">
+          {activeOrders.length === 0 ? (
+            <p className="text-sm text-slate-500">None in effect.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {activeOrders.map((r) => (
+                <li key={r.id} className="text-sm">
+                  <span className="font-semibold text-slate-800">{String(r.data.title)}</span>
+                  <span className="text-xs text-slate-500">
+                    {" "}
+                    · {r.data.audience ? `C${r.data.audience}` : "Battalion"}
+                    {r.data.expires ? ` · until ${formatDay(String(r.data.expires))}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {upcomingOrders.length > 0 && <p className="mt-1 text-xs text-blue-700">{upcomingOrders.length} more take effect soon.</p>}
         </Card>
+
+        <Card title="Training this week" href="#/operations/training">
+          {upcomingTraining.length === 0 ? (
+            <p className="text-sm text-slate-500">Nothing scheduled in the next 7 days.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {upcomingTraining.map((r) => (
+                <li key={r.id} className="text-sm text-slate-800">
+                  <span className="text-xs text-slate-500">
+                    {formatDay(String(r.data.date))}
+                    {r.data.time ? ` ${r.data.time}` : ""} ·{" "}
+                  </span>
+                  {String(r.data.title)} <span className="text-xs text-slate-500">({String(r.data.event)})</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Card title="Supply" href="#/supply/work-orders">
+            <p className="text-2xl font-bold text-slate-900">{openWorkOrders.length}</p>
+            <p className="text-xs text-slate-500">open work order{openWorkOrders.length === 1 ? "" : "s"}</p>
+          </Card>
+          <Card title="New cadets" href="#/adjutant/ncs">
+            <p className="text-2xl font-bold text-slate-900">
+              {invited}
+              <span className="text-sm font-normal text-slate-500">/{ncs.length}</span>
+            </p>
+            <p className="text-xs text-slate-500">invited to boards</p>
+          </Card>
+        </div>
       </div>
     </div>
   );
