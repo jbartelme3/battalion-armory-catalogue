@@ -45,6 +45,28 @@ export function ordinal(n: number): string {
   return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
 }
 
+// "9/27"
+export function shortDate(iso: string): string {
+  const d = parseDate(iso);
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+}
+
+// Academic year a week belongs to, e.g. a week starting 2026-09-27 -> "2026–27".
+export function seasonOf(week: Pick<BannerWeek, "start_date">): string {
+  const [y, m] = week.start_date.split("-").map(Number);
+  const start = m >= 7 ? y : y - 1;
+  return `${start}–${String(start + 1).slice(2)}`;
+}
+
+// One fixed color per company, validated as a set (CVD-safe, all pairs).
+// Company C's aqua is under 3:1 on white, so charts always pair it with a
+// legend, direct labels or a table view.
+export const COMPANY_COLORS: Record<"A" | "B" | "C", string> = {
+  A: "#2a78d6",
+  B: "#eb6834",
+  C: "#1baf7a",
+};
+
 // Per-cadet totals are fractions; everything else is a whole or half count.
 export function formatTotal(n: number, perCadet: boolean): string {
   return perCadet ? n.toFixed(3) : String(Math.round(n * 100) / 100);

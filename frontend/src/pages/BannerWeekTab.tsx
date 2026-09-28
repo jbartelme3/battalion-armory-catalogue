@@ -512,6 +512,17 @@ function EventRow({
               </span>
             ))}
           </div>
+          {event.named.length > 0 && (
+            <ul className="mt-1 space-y-0.5 text-xs text-slate-600">
+              {event.named.map((n) => (
+                <li key={n.id}>
+                  <span className="font-semibold text-slate-700">{n.cadet_name}</span> (C{n.company}) · {n.count} gig
+                  {n.count === 1 ? "" : "s"}
+                  {n.reason ? ` · ${n.reason}` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
           {event.note && <div className="text-xs text-slate-500">{event.note}</div>}
           <div className="text-[11px] text-slate-400">Entered by {event.entered_by}</div>
         </div>
@@ -695,7 +706,9 @@ function ReopenPanel({ onConfirm, onCancel }: { onConfirm: (reason: string) => P
 type Snapshot = Record<string, unknown>;
 
 function gigsText(s: Snapshot): string {
-  return BANNER_COMPANIES.map((c) => `C${c} ${s[`gigs_${c.toLowerCase()}`]}`).join(", ");
+  const counts = BANNER_COMPANIES.map((c) => `C${c} ${s[`gigs_${c.toLowerCase()}`]}`).join(", ");
+  const named = (s.named as { cadet_name: string; count: number }[] | undefined) ?? [];
+  return named.length ? `${counts}; named: ${named.map((n) => `${n.cadet_name} ${n.count}`).join(", ")}` : counts;
 }
 
 function describeAudit(entry: BannerAuditEntry, categories: BannerCategory[]): string {

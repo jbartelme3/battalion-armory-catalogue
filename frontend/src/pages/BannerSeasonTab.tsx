@@ -2,14 +2,7 @@ import { useEffect, useState } from "react";
 import { bannerApi } from "../api/client";
 import type { BannerCompany, BannerWeek } from "../types";
 import { BANNER_COMPANIES } from "../types";
-import { effectiveStandings, weekLabel } from "../components/bannerUtils";
-
-// Academic year a week belongs to, e.g. a week starting 2026-09-27 -> "2026–27".
-function seasonOf(week: BannerWeek): string {
-  const [y, m] = week.start_date.split("-").map(Number);
-  const start = m >= 7 ? y : y - 1;
-  return `${start}–${String(start + 1).slice(2)}`;
-}
+import { effectiveStandings, seasonOf, weekLabel } from "../components/bannerUtils";
 
 // Consecutive most-recent finalized weeks each company won (shared counts).
 function currentStreaks(finals: BannerWeek[]): Record<BannerCompany, number> {
