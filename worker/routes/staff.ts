@@ -87,6 +87,22 @@ staff.get("/list/:kind", async (c) => {
   return c.json(results.map(serializeRecord));
 });
 
+// GET /api/staff/lists?kinds=a,b,c — several types in one request (the
+// Commander overview reads most of them at once).
+staff.get("/lists", async (c) => {
+  const keys = (c.req.query("kinds") ?? "").split(",").filter(Boolean);
+  const unknown = keys.filter((k) => !findKind(k));
+  if (unknown.length) return c.json({ error: `Unknown record type: ${unknown.join(", ")}` }, 400);
+  if (keys.length === 0) return c.json({});
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM staff_records WHERE kind IN (${keys.map(() => "?").join(", ")}) AND deleted_at IS NULL
+     ORDER BY record_date DESC, id DESC`,
+  )
+    .bind(...keys)
+    .all<RecordRow>();
+  return c.json(Object.fromEntries(keys.map((k) => [k, results.filter((r) => r.kind === k).map(serializeRecord)])));
+});
+
 // POST /api/staff/list/:kind — create a record.
 staff.post("/list/:kind", async (c) => {
   const kind = findKind(c.req.param("kind"));

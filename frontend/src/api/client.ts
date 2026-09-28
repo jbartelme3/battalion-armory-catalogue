@@ -144,6 +144,7 @@ export const bannerApi = {
 export const staffApi = {
   kinds: () => request<StaffKind[]>("/api/staff/kinds"),
   list: (kind: string) => request<StaffRecord[]>(`/api/staff/list/${kind}`),
+  lists: (kinds: string[]) => request<Record<string, StaffRecord[]>>(`/api/staff/lists?kinds=${kinds.join(",")}`),
   create: (kind: string, data: StaffData, actor: string) =>
     request<StaffRecord>(`/api/staff/list/${kind}`, { method: "POST", body: JSON.stringify({ data, actor }) }),
   update: (id: number, data: StaffData, actor: string) =>

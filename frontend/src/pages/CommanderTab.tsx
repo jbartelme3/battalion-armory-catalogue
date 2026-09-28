@@ -50,10 +50,8 @@ export default function CommanderTab() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([bannerApi.weeks(), Promise.all(KINDS.map((k) => staffApi.list(k))), ncsApi.list(), cadetsApi.list()])
-      .then(([{ weeks }, lists, ncs, roster]) =>
-        setData({ weeks, records: Object.fromEntries(KINDS.map((k, i) => [k, lists[i]])), ncs, roster }),
-      )
+    Promise.all([bannerApi.weeks(), staffApi.lists(KINDS), ncsApi.list(), cadetsApi.list()])
+      .then(([{ weeks }, records, ncs, roster]) => setData({ weeks, records, ncs, roster }))
       .catch((err) => setError(err.message));
   }, []);
 
