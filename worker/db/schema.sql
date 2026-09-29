@@ -147,3 +147,19 @@ CREATE TABLE IF NOT EXISTS banner_audit (
 );
 
 CREATE INDEX IF NOT EXISTS idx_banner_audit_week ON banner_audit (week_id, created_at);
+
+-- Individual cadets named on a banner event's gigs (attribution only; the
+-- event's per-company counts are what's scored).
+CREATE TABLE IF NOT EXISTS banner_gigs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id INTEGER NOT NULL REFERENCES banner_events (id) ON DELETE CASCADE,
+  company TEXT NOT NULL CHECK (company IN ('A', 'B', 'C')),
+  cadet_id INTEGER REFERENCES cadets (id) ON DELETE SET NULL,
+  cadet_name TEXT NOT NULL,
+  count REAL NOT NULL CHECK (count > 0),
+  reason TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_banner_gigs_event ON banner_gigs (event_id);
+CREATE INDEX IF NOT EXISTS idx_banner_gigs_cadet ON banner_gigs (cadet_id);

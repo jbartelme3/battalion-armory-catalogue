@@ -3,6 +3,7 @@ import type {
   BannerCategory,
   BannerEvent,
   BannerEventInput,
+  BannerGigRecord,
   BannerWeek,
   BannerWeekInput,
   Cadet,
@@ -130,6 +131,7 @@ export const bannerApi = {
     request<void>(`/api/banner/events/${id}`, { method: "DELETE", body: JSON.stringify({ actor }) }),
   finalize: (id: number, actor: string) =>
     request<BannerWeek>(`/api/banner/weeks/${id}/finalize`, { method: "POST", body: JSON.stringify({ actor }) }),
+  gigs: () => request<BannerGigRecord[]>("/api/banner/gigs"),
   reopen: (id: number, actor: string, reason: string) =>
     request<BannerWeek>(`/api/banner/weeks/${id}/reopen`, { method: "POST", body: JSON.stringify({ actor, reason }) }),
 };

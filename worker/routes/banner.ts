@@ -34,6 +34,16 @@ interface EventRow {
   updated_at: string;
 }
 
+interface GigRow {
+  id: number;
+  event_id: number;
+  company: Company;
+  cadet_id: number | null;
+  cadet_name: string;
+  count: number;
+  reason: string | null;
+}
+
 interface AuditRow {
   id: number;
   week_id: number;
@@ -99,13 +109,25 @@ function serializeWeek(week: WeekRow, events: EventRow[]) {
   };
 }
 
-function serializeEvent(row: EventRow) {
+function serializeGig(row: GigRow) {
+  return {
+    id: row.id,
+    cadet_id: row.cadet_id,
+    cadet_name: row.cadet_name,
+    company: row.company,
+    count: row.count,
+    reason: row.reason,
+  };
+}
+
+function serializeEvent(row: EventRow, gigs: GigRow[]) {
   return {
     id: row.id,
     category: row.category,
     event_date: row.event_date,
     gigs: { A: row.gigs_a, B: row.gigs_b, C: row.gigs_c },
     inspected: { A: row.inspected_a, B: row.inspected_b, C: row.inspected_c },
+    named: gigs.filter((g) => g.event_id === row.id).map(serializeGig),
     note: row.note,
     entered_by: row.entered_by,
     created_at: row.created_at,
@@ -154,6 +176,20 @@ async function loadEvents(DB: D1Database, weekId: number) {
   return results;
 }
 
+async function loadWeekGigs(DB: D1Database, weekId: number) {
+  const { results } = await DB.prepare(
+    "SELECT g.* FROM banner_gigs g JOIN banner_events e ON e.id = g.event_id WHERE e.week_id = ? ORDER BY g.id",
+  )
+    .bind(weekId)
+    .all<GigRow>();
+  return results;
+}
+
+async function loadEventGigs(DB: D1Database, eventId: number) {
+  const { results } = await DB.prepare("SELECT * FROM banner_gigs WHERE event_id = ? ORDER BY id").bind(eventId).all<GigRow>();
+  return results;
+}
+
 // ---- Week dates / strengths validation -----------------------------------
 
 interface WeekInput {
@@ -196,9 +232,63 @@ interface EventInput {
   inspected_b: number | null;
   inspected_c: number | null;
   note: string | null;
+  named: NamedGigInput[];
 }
 
-function parseEventInput(body: Record<string, unknown>, week: WeekRow): { ok: true; value: EventInput } | { ok: false; error: string } {
+interface NamedGigInput {
+  company: Company;
+  cadet_id: number | null;
+  cadet_name: string;
+  count: number;
+  reason: string | null;
+}
+
+// Named gigs attribute some of an event's gigs to individual cadets. Roster
+// cadets are looked up so the stored name/company can't be spoofed; names
+// typed in by hand need a company. A company's named gigs can't add up to
+// more than the gigs recorded for it on this event.
+async function parseNamedGigs(
+  DB: D1Database,
+  raw: unknown,
+  gigs: Record<Company, number>,
+): Promise<{ ok: true; value: NamedGigInput[] } | { ok: false; error: string }> {
+  if (raw == null) return { ok: true, value: [] };
+  if (!Array.isArray(raw)) return { ok: false, error: "Named gigs must be a list" };
+  const named: NamedGigInput[] = [];
+  for (const item of raw as Record<string, unknown>[]) {
+    const count = Number(item.count);
+    if (!Number.isFinite(count) || count <= 0 || Math.round(count * 2) !== count * 2) {
+      return { ok: false, error: "Each named cadet needs a gig count above 0 (whole or half)" };
+    }
+    const reason = typeof item.reason === "string" && item.reason.trim() ? item.reason.trim().slice(0, 200) : null;
+    if (item.cadet_id != null) {
+      const cadet = await DB.prepare("SELECT id, first_name, last_name, company FROM cadets WHERE id = ?")
+        .bind(Number(item.cadet_id))
+        .first<{ id: number; first_name: string; last_name: string; company: Company }>();
+      if (!cadet) return { ok: false, error: "A named cadet is no longer on the roster" };
+      named.push({ company: cadet.company, cadet_id: cadet.id, cadet_name: `${cadet.first_name} ${cadet.last_name}`, count, reason });
+    } else {
+      const name = typeof item.cadet_name === "string" ? item.cadet_name.trim().slice(0, 80) : "";
+      const company = item.company as Company;
+      if (!name) return { ok: false, error: "Enter a name for each cadet" };
+      if (!COMPANIES.includes(company)) return { ok: false, error: `Pick a company for ${name}` };
+      named.push({ company, cadet_id: null, cadet_name: name, count, reason });
+    }
+  }
+  for (const c of COMPANIES) {
+    const total = named.filter((n) => n.company === c).reduce((sum, n) => sum + n.count, 0);
+    if (total > gigs[c] + 1e-9) {
+      return { ok: false, error: `Company ${c} has ${total} named gig(s) but only ${gigs[c]} recorded for this event` };
+    }
+  }
+  return { ok: true, value: named };
+}
+
+async function parseEventInput(
+  DB: D1Database,
+  body: Record<string, unknown>,
+  week: WeekRow,
+): Promise<{ ok: true; value: EventInput } | { ok: false; error: string }> {
   const category = BANNER_CATEGORIES.find((cat) => cat.key === body.category);
   if (!category) return { ok: false, error: "Pick a category" };
   const date = body.event_date;
@@ -223,6 +313,8 @@ function parseEventInput(body: Record<string, unknown>, week: WeekRow): { ok: tr
   }
 
   const note = typeof body.note === "string" && body.note.trim() ? body.note.trim().slice(0, 500) : null;
+  const named = await parseNamedGigs(DB, body.named, { A: gigs[0], B: gigs[1], C: gigs[2] });
+  if (!named.ok) return named;
   return {
     ok: true,
     value: {
@@ -235,8 +327,22 @@ function parseEventInput(body: Record<string, unknown>, week: WeekRow): { ok: tr
       inspected_b: inspected[1],
       inspected_c: inspected[2],
       note,
+      named: named.value,
     },
   };
+}
+
+function insertGigStmts(DB: D1Database, eventId: number, named: NamedGigInput[]) {
+  return named.map((n) =>
+    DB.prepare("INSERT INTO banner_gigs (event_id, company, cadet_id, cadet_name, count, reason) VALUES (?, ?, ?, ?, ?, ?)").bind(
+      eventId,
+      n.company,
+      n.cadet_id,
+      n.cadet_name,
+      n.count,
+      n.reason,
+    ),
+  );
 }
 
 const FINALIZED_ERROR = "This week has been finalized. Reopen it (with a reason) before changing scores.";
@@ -262,16 +368,38 @@ banner.get("/weeks/:id", async (c) => {
   const { DB } = c.env;
   const week = await loadWeek(DB, Number(c.req.param("id")));
   if (!week) return c.json({ error: "Week not found" }, 404);
-  const events = await loadEvents(DB, week.id);
+  const [events, gigs] = await Promise.all([loadEvents(DB, week.id), loadWeekGigs(DB, week.id)]);
   const { results: audit } = await DB.prepare("SELECT * FROM banner_audit WHERE week_id = ? ORDER BY created_at DESC, id DESC")
     .bind(week.id)
     .all<AuditRow>();
   return c.json({
     categories: BANNER_CATEGORIES,
     week: serializeWeek(week, events),
-    events: events.map(serializeEvent),
+    events: events.map((e) => serializeEvent(e, gigs)),
     audit: audit.map(serializeAudit),
   });
+});
+
+// GET /api/banner/gigs — every named gig with its event's date, category
+// and week, for individual performance trends.
+banner.get("/gigs", async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT g.*, e.category, e.event_date, e.week_id, w.start_date AS week_start, w.end_date AS week_end
+     FROM banner_gigs g
+     JOIN banner_events e ON e.id = g.event_id
+     JOIN banner_weeks w ON w.id = e.week_id
+     ORDER BY e.event_date, g.id`,
+  ).all<GigRow & { category: string; event_date: string; week_id: number; week_start: string; week_end: string }>();
+  return c.json(
+    results.map((r) => ({
+      ...serializeGig(r),
+      category: r.category,
+      event_date: r.event_date,
+      week_id: r.week_id,
+      week_start: r.week_start,
+      week_end: r.week_end,
+    })),
+  );
 });
 
 // POST /api/banner/weeks — start a new week.
@@ -347,7 +475,7 @@ banner.post("/weeks/:id/events", async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const actor = validActor(body.actor);
   if (!actor) return c.json({ error: "Enter your name so the change is recorded" }, 400);
-  const parsed = parseEventInput(body, week);
+  const parsed = await parseEventInput(DB, body, week);
   if (!parsed.ok) return c.json({ error: parsed.error }, 400);
   const e = parsed.value;
 
@@ -358,8 +486,11 @@ banner.post("/weeks/:id/events", async (c) => {
     .bind(week.id, e.category, e.event_date, e.gigs_a, e.gigs_b, e.gigs_c, e.inspected_a, e.inspected_b, e.inspected_c, e.note, actor)
     .first<EventRow>();
   if (!created) return c.json({ error: "Could not save" }, 500);
-  await auditStmt(DB, { week_id: week.id, event_id: created.id, action: "create_event", actor, after: e }).run();
-  return c.json(serializeEvent(created), 201);
+  await DB.batch([
+    ...insertGigStmts(DB, created.id, e.named),
+    auditStmt(DB, { week_id: week.id, event_id: created.id, action: "create_event", actor, after: e }),
+  ]);
+  return c.json(serializeEvent(created, await loadEventGigs(DB, created.id)), 201);
 });
 
 async function loadEventAndWeek(DB: D1Database, eventId: number) {
@@ -369,7 +500,7 @@ async function loadEventAndWeek(DB: D1Database, eventId: number) {
   return week ? { event, week } : null;
 }
 
-function eventSnapshot(e: EventRow): EventInput {
+function eventSnapshot(e: EventRow, gigs: GigRow[]): EventInput {
   return {
     category: e.category,
     event_date: e.event_date,
@@ -380,10 +511,12 @@ function eventSnapshot(e: EventRow): EventInput {
     inspected_b: e.inspected_b,
     inspected_c: e.inspected_c,
     note: e.note,
+    named: gigs.map((g) => ({ company: g.company, cadet_id: g.cadet_id, cadet_name: g.cadet_name, count: g.count, reason: g.reason })),
   };
 }
 
-// PATCH /api/banner/events/:id — correct an event in an open week.
+// PATCH /api/banner/events/:id — correct an event in an open week. Named
+// gigs are replaced wholesale with the submitted list.
 banner.patch("/events/:id", async (c) => {
   const { DB } = c.env;
   const found = await loadEventAndWeek(DB, Number(c.req.param("id")));
@@ -394,23 +527,26 @@ banner.patch("/events/:id", async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const actor = validActor(body.actor);
   if (!actor) return c.json({ error: "Enter your name so the change is recorded" }, 400);
-  const parsed = parseEventInput(body, week);
+  const parsed = await parseEventInput(DB, body, week);
   if (!parsed.ok) return c.json({ error: parsed.error }, 400);
   const e = parsed.value;
+  const before = eventSnapshot(event, await loadEventGigs(DB, event.id));
 
   await DB.batch([
     DB.prepare(
       `UPDATE banner_events SET category = ?, event_date = ?, gigs_a = ?, gigs_b = ?, gigs_c = ?,
          inspected_a = ?, inspected_b = ?, inspected_c = ?, note = ?, updated_at = datetime('now') WHERE id = ?`,
     ).bind(e.category, e.event_date, e.gigs_a, e.gigs_b, e.gigs_c, e.inspected_a, e.inspected_b, e.inspected_c, e.note, event.id),
-    auditStmt(DB, { week_id: week.id, event_id: event.id, action: "update_event", actor, before: eventSnapshot(event), after: e }),
+    DB.prepare("DELETE FROM banner_gigs WHERE event_id = ?").bind(event.id),
+    ...insertGigStmts(DB, event.id, e.named),
+    auditStmt(DB, { week_id: week.id, event_id: event.id, action: "update_event", actor, before, after: e }),
   ]);
   const updated = await DB.prepare("SELECT * FROM banner_events WHERE id = ?").bind(event.id).first<EventRow>();
-  return c.json(serializeEvent(updated!));
+  return c.json(serializeEvent(updated!, await loadEventGigs(DB, event.id)));
 });
 
 // DELETE /api/banner/events/:id — remove an event from an open week. The
-// audit log keeps a full copy of what was deleted.
+// audit log keeps a full copy of what was deleted, named gigs included.
 banner.delete("/events/:id", async (c) => {
   const { DB } = c.env;
   const found = await loadEventAndWeek(DB, Number(c.req.param("id")));
@@ -421,10 +557,12 @@ banner.delete("/events/:id", async (c) => {
   const body = await c.req.json<Record<string, unknown>>().catch(() => ({}) as Record<string, unknown>);
   const actor = validActor(body.actor);
   if (!actor) return c.json({ error: "Enter your name so the change is recorded" }, 400);
+  const before = eventSnapshot(event, await loadEventGigs(DB, event.id));
 
   await DB.batch([
+    DB.prepare("DELETE FROM banner_gigs WHERE event_id = ?").bind(event.id),
     DB.prepare("DELETE FROM banner_events WHERE id = ?").bind(event.id),
-    auditStmt(DB, { week_id: week.id, event_id: event.id, action: "delete_event", actor, before: eventSnapshot(event) }),
+    auditStmt(DB, { week_id: week.id, event_id: event.id, action: "delete_event", actor, before }),
   ]);
   return c.body(null, 204);
 });

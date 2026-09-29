@@ -501,6 +501,7 @@ export interface BannerEvent {
   event_date: string;
   gigs: PerCompany<number>;
   inspected: PerCompany<number | null>;
+  named: BannerNamedGig[];
   note: string | null;
   entered_by: string;
   created_at: string;
@@ -524,6 +525,35 @@ export interface BannerEventInput {
   gigs: PerCompany<number | string>;
   inspected: PerCompany<number | string | null>;
   note: string;
+  named: BannerNamedGigInput[];
+}
+
+// A cadet named on an event's gigs. Attribution only — the event's company
+// counts are what's scored; named gigs can't exceed them.
+export interface BannerNamedGig {
+  id: number;
+  cadet_id: number | null;
+  cadet_name: string;
+  company: BannerCompany;
+  count: number;
+  reason: string | null;
+}
+
+export interface BannerNamedGigInput {
+  cadet_id: number | null;
+  cadet_name: string;
+  company: BannerCompany;
+  count: number | string;
+  reason: string;
+}
+
+// A named gig with its event's context, from /api/banner/gigs.
+export interface BannerGigRecord extends BannerNamedGig {
+  category: string;
+  event_date: string;
+  week_id: number;
+  week_start: string;
+  week_end: string;
 }
 
 export interface BannerWeekInput {

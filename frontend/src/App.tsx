@@ -6,6 +6,7 @@ import EquipmentTab from "./pages/EquipmentTab";
 import RiflePickupTab from "./pages/RiflePickupTab";
 import BannerWeekTab from "./pages/BannerWeekTab";
 import BannerSeasonTab from "./pages/BannerSeasonTab";
+import BannerTrendsTab from "./pages/BannerTrendsTab";
 
 type SubTab = { id: string; label: string; render: () => JSX.Element };
 
@@ -23,6 +24,7 @@ const SECTIONS: Section[] = [
     subtabs: [
       { id: "banner", label: "Banner", render: () => <BannerWeekTab /> },
       { id: "season", label: "Season", render: () => <BannerSeasonTab /> },
+      { id: "trends", label: "Trends", render: () => <BannerTrendsTab /> },
     ],
   },
   { id: "supply", label: "Supply", subtabs: [] },

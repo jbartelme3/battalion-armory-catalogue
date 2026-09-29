@@ -16,6 +16,8 @@
     "db:migrate:banner:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0003_battalion_banner.sql",
     "db:import:banner:local": "wrangler d1 execute battalion-armory --local --file=worker/db/migrations/0004_banner_import_2026_fall.sql",
     "db:import:banner:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0004_banner_import_2026_fall.sql",
+    "db:migrate:banner-gigs:local": "wrangler d1 execute battalion-armory --local --file=worker/db/migrations/0005_banner_named_gigs.sql",
+    "db:migrate:banner-gigs:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0005_banner_named_gigs.sql",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

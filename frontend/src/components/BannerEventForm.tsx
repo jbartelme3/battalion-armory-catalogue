@@ -1,7 +1,9 @@
-import { useState } from "react";
-import type { BannerCategory, BannerEvent, BannerEventInput, BannerWeek } from "../types";
+import { useEffect, useState } from "react";
+import { cadetsApi } from "../api/client";
+import type { BannerCategory, BannerEvent, BannerEventInput, BannerNamedGigInput, BannerWeek, Cadet } from "../types";
 import { BANNER_COMPANIES } from "../types";
 import { dayOptionLabel, todayIso, weekDates } from "./bannerUtils";
+import BannerNamedGigsEditor from "./BannerNamedGigsEditor";
 
 interface Props {
   week: BannerWeek;
@@ -25,11 +27,29 @@ export default function BannerEventForm({ week, categories, initial, defaultCate
   const [inspected, setInspected] = useState<Record<string, string>>(() =>
     Object.fromEntries(BANNER_COMPANIES.map((c) => [c, initial?.inspected[c] ? String(initial.inspected[c]) : ""])),
   );
+  const [named, setNamed] = useState<BannerNamedGigInput[]>(
+    () =>
+      initial?.named.map((n) => ({
+        cadet_id: n.cadet_id,
+        cadet_name: n.cadet_name,
+        company: n.company,
+        count: n.count,
+        reason: n.reason ?? "",
+      })) ?? [],
+  );
+  const [roster, setRoster] = useState<Cadet[]>([]);
   const [note, setNote] = useState(initial?.note ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const cat = categories.find((c) => c.key === category);
+
+  useEffect(() => {
+    cadetsApi
+      .list()
+      .then(setRoster)
+      .catch(() => setRoster([]));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +68,7 @@ export default function BannerEventForm({ week, categories, initial, defaultCate
           ? { A: inspected.A || null, B: inspected.B || null, C: inspected.C || null }
           : { A: null, B: null, C: null },
         note,
+        named,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save.");
@@ -132,6 +153,13 @@ export default function BannerEventForm({ week, categories, initial, defaultCate
           </div>
         </div>
       )}
+
+      <BannerNamedGigsEditor
+        value={named}
+        onChange={setNamed}
+        roster={roster}
+        gigs={{ A: gigs.A, B: gigs.B, C: gigs.C }}
+      />
 
       <label className="block text-sm font-medium text-slate-700">
         Note <span className="font-normal text-slate-400">(optional)</span>
