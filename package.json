@@ -12,6 +12,10 @@
     "db:migrate:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/schema.sql",
     "db:migrate:history:local": "wrangler d1 execute battalion-armory --local --file=worker/db/migrations/0001_rifle_pickup_and_history.sql",
     "db:migrate:history:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0001_rifle_pickup_and_history.sql",
+    "db:migrate:banner:local": "wrangler d1 execute battalion-armory --local --file=worker/db/migrations/0003_battalion_banner.sql",
+    "db:migrate:banner:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0003_battalion_banner.sql",
+    "db:import:banner:local": "wrangler d1 execute battalion-armory --local --file=worker/db/migrations/0004_banner_import_2026_fall.sql",
+    "db:import:banner:remote": "wrangler d1 execute battalion-armory --remote --file=worker/db/migrations/0004_banner_import_2026_fall.sql",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
