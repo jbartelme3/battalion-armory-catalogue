@@ -1,36 +1,80 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { auth } from "./api/client";
 import Login from "./pages/Login";
-import CadetsTab from "./pages/CadetsTab";
-import EquipmentTab from "./pages/EquipmentTab";
-import RiflePickupTab from "./pages/RiflePickupTab";
-import BannerWeekTab from "./pages/BannerWeekTab";
-import BannerSeasonTab from "./pages/BannerSeasonTab";
-import BannerTrendsTab from "./pages/BannerTrendsTab";
+import PageErrorBoundary from "./components/PageErrorBoundary";
+import HomeNotices from "./components/HomeNotices";
+
+// Each page loads on first visit, so the home screen doesn't download every
+// section's code up front.
+const CadetsTab = lazy(() => import("./pages/CadetsTab"));
+const EquipmentTab = lazy(() => import("./pages/EquipmentTab"));
+const RiflePickupTab = lazy(() => import("./pages/RiflePickupTab"));
+const BannerWeekTab = lazy(() => import("./pages/BannerWeekTab"));
+const BannerSeasonTab = lazy(() => import("./pages/BannerSeasonTab"));
+const BannerTrendsTab = lazy(() => import("./pages/BannerTrendsTab"));
+const CommanderTab = lazy(() => import("./pages/CommanderTab"));
+const NcsTab = lazy(() => import("./pages/NcsTab"));
+const StaffRecordsBoard = lazy(() => import("./components/staff/StaffRecordsBoard"));
 
 type SubTab = { id: string; label: string; render: () => JSX.Element };
 
-type Section = { id: string; label: string; subtabs: SubTab[] };
+type Section = { id: string; label: string; blurb: string; subtabs: SubTab[] };
 
-// Home screen widgets, top to bottom. Sections with no subtabs yet show a
-// placeholder when opened.
+const records = (kind: string) => () => <StaffRecordsBoard kindKey={kind} />;
+
+// Home screen widgets, top to bottom. Duties behind each section come from
+// CMA 3-1 (Billet Descriptions) and Eagles & Wings.
 const SECTIONS: Section[] = [
-  { id: "commander", label: "Commander", subtabs: [] },
-  { id: "adjutant", label: "Adjutant", subtabs: [] },
-  { id: "operations", label: "Operations Officer", subtabs: [] },
+  {
+    id: "commander",
+    label: "Commander",
+    blurb: "Battalion overview · P.I./G.I. inspections",
+    subtabs: [
+      { id: "overview", label: "Overview", render: () => <CommanderTab /> },
+      { id: "inspections", label: "Inspections", render: records("inspections") },
+    ],
+  },
+  {
+    id: "adjutant",
+    label: "Adjutant",
+    blurb: "Orders & notices · Morale reports · New Cadet System",
+    subtabs: [
+      { id: "orders", label: "Orders & Notices", render: records("orders") },
+      { id: "morale", label: "Morale", render: records("morale") },
+      { id: "ncs", label: "New Cadets", render: () => <NcsTab /> },
+    ],
+  },
+  {
+    id: "operations",
+    label: "Operations Officer",
+    blurb: "Training schedule and evaluations",
+    subtabs: [{ id: "training", label: "Training", render: records("training") }],
+  },
   {
     id: "sergeant-major",
     label: "Sergeant Major",
+    blurb: "Battalion Banner · Season · Trends · 1SG reports",
     subtabs: [
       { id: "banner", label: "Banner", render: () => <BannerWeekTab /> },
       { id: "season", label: "Season", render: () => <BannerSeasonTab /> },
       { id: "trends", label: "Trends", render: () => <BannerTrendsTab /> },
+      { id: "1sg-reports", label: "1SG Reports", render: records("first_sgt_reports") },
     ],
   },
-  { id: "supply", label: "Supply", subtabs: [] },
+  {
+    id: "supply",
+    label: "Supply",
+    blurb: "Laundry pickup · Work orders · Police areas",
+    subtabs: [
+      { id: "laundry", label: "Laundry", render: records("laundry") },
+      { id: "work-orders", label: "Work Orders", render: records("work_orders") },
+      { id: "police-areas", label: "Police Areas", render: records("police_areas") },
+    ],
+  },
   {
     id: "armorer",
     label: "Armorer",
+    blurb: "Cadets · Equipment · Rifle Pickup",
     subtabs: [
       { id: "cadets", label: "Cadets", render: () => <CadetsTab /> },
       { id: "equipment", label: "Equipment", render: () => <EquipmentTab /> },
@@ -89,13 +133,13 @@ export default function App() {
           <a href="#/" className="text-base font-bold text-slate-900">
             Infantry Battalion Catalogue
           </a>
-          <button onClick={handleLogout} className="text-sm text-slate-500 hover:text-slate-800">
+          <button onClick={handleLogout} className="text-sm text-slate-500 hover:text-slate-800 print:hidden">
             Log out
           </button>
         </div>
         {section && (
           <div className="mx-auto max-w-5xl px-4">
-            <div className="flex items-center gap-2 pb-2 text-sm">
+            <div className="flex items-center gap-2 pb-2 text-sm print:hidden">
               <a href="#/" className="text-slate-500 hover:text-slate-800">
                 ← Home
               </a>
@@ -103,12 +147,12 @@ export default function App() {
               <span className="font-semibold text-slate-900">{section.label}</span>
             </div>
             {section.subtabs.length > 0 && (
-              <nav className="flex gap-1 overflow-x-auto">
+              <nav className="flex gap-1 overflow-x-auto print:hidden">
                 {section.subtabs.map((t) => (
                   <a
                     key={t.id}
                     href={`#/${section.id}/${t.id}`}
-                    className={`whitespace-nowrap border-b-2 px-4 py-2 text-sm font-semibold ${
+                    className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold ${
                       subtab?.id === t.id
                         ? "border-slate-900 text-slate-900"
                         : "border-transparent text-slate-500 hover:text-slate-800"
@@ -126,6 +170,7 @@ export default function App() {
       <main className="mx-auto max-w-5xl px-4 py-6">
         {!section && (
           <div className="flex flex-col gap-3">
+            <HomeNotices />
             {SECTIONS.map((s) => (
               <a
                 key={s.id}
@@ -135,7 +180,7 @@ export default function App() {
                 <div>
                   <div className="text-base font-bold text-slate-900">{s.label}</div>
                   <div className="mt-0.5 text-sm text-slate-500">
-                    {s.subtabs.length > 0 ? s.subtabs.map((t) => t.label).join(" · ") : "Coming soon"}
+                    {s.blurb}
                   </div>
                 </div>
                 <span className="text-xl text-slate-400">›</span>
@@ -143,7 +188,12 @@ export default function App() {
             ))}
           </div>
         )}
-        {section && subtab && subtab.render()}
+        {section && subtab && (
+          // key remounts the page (and resets any error) when switching subtabs
+          <PageErrorBoundary key={`${section.id}/${subtab.id}`}>
+            <Suspense fallback={<p className="text-sm text-slate-400">Loading…</p>}>{subtab.render()}</Suspense>
+          </PageErrorBoundary>
+        )}
         {section && !subtab && (
           <div className="rounded-lg border border-dashed border-slate-300 bg-white px-5 py-10 text-center text-sm text-slate-500">
             Nothing here yet for {section.label}.
