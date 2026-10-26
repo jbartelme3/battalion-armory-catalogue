@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { bannerApi } from "../api/client";
-import type { BannerCategory, BannerCompany, BannerGigRecord, BannerWeek } from "../types";
+import { bannerApi, cadetsApi } from "../api/client";
+import type { BannerCategory, BannerCompany, BannerGigRecord, BannerWeek, Cadet } from "../types";
 import { BANNER_COMPANIES } from "../types";
 import LineChart from "../components/charts/LineChart";
 import BarList from "../components/charts/BarList";
@@ -25,6 +25,13 @@ function Card({ title, subtitle, children }: { title: string; subtitle?: string;
   );
 }
 
+interface CadetGigs {
+  name: string;
+  company: BannerCompany;
+  total: number;
+  records: BannerGigRecord[];
+}
+
 function cadetKey(g: BannerGigRecord): string {
   return g.cadet_id !== null ? `id:${g.cadet_id}` : `name:${g.company}:${g.cadet_name.toLowerCase()}`;
 }
@@ -38,6 +45,9 @@ export default function BannerTrendsTab() {
   const [gigCompany, setGigCompany] = useState<BannerCompany | "all">("all");
   const [gigCategory, setGigCategory] = useState("all");
   const [selectedCadet, setSelectedCadet] = useState<string | null>(null);
+  const [showAllCadets, setShowAllCadets] = useState(false);
+  const [rankQuery, setRankQuery] = useState("");
+  const [roster, setRoster] = useState<Cadet[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +59,12 @@ export default function BannerTrendsTab() {
         if (weeks.length) setSeason(seasonOf(weeks[weeks.length - 1]));
       })
       .catch((err) => setError(err.message));
+    // The roster only adds zero-gig cadets to the full rankings; without it
+    // the rankings still list everyone who has been named.
+    cadetsApi
+      .list()
+      .then(setRoster)
+      .catch(() => {});
   }, []);
 
   if (error) return <p className="text-sm text-red-600">{error}</p>;
@@ -66,7 +82,7 @@ export default function BannerTrendsTab() {
   const filtered = seasonGigs.filter(
     (g) => (gigCompany === "all" || g.company === gigCompany) && (gigCategory === "all" || g.category === gigCategory),
   );
-  const byCadet = new Map<string, { name: string; company: BannerCompany; total: number; records: BannerGigRecord[] }>();
+  const byCadet = new Map<string, CadetGigs>();
   for (const g of filtered) {
     const key = cadetKey(g);
     const entry = byCadet.get(key) ?? { name: g.cadet_name, company: g.company, total: 0, records: [] };
@@ -76,6 +92,27 @@ export default function BannerTrendsTab() {
   }
   const ranked = [...byCadet.entries()].sort((a, b) => b[1].total - a[1].total || a[1].name.localeCompare(b[1].name));
   const selected = selectedCadet ? byCadet.get(selectedCadet) : undefined;
+
+  // Full battalion rankings: every cadet on the roster (zero gigs included)
+  // plus any named cadets not on it. Ties share a rank (1, 2, 2, 4).
+  const everyone = new Map(byCadet);
+  for (const c of roster) {
+    const key = `id:${c.id}`;
+    if ((gigCompany === "all" || c.company === gigCompany) && !everyone.has(key)) {
+      everyone.set(key, { name: `${c.first_name} ${c.last_name}`, company: c.company, total: 0, records: [] });
+    }
+  }
+  const standings: { key: string; entry: CadetGigs; rank: number }[] = [];
+  for (const [key, entry] of [...everyone.entries()].sort(
+    (a, b) => b[1].total - a[1].total || a[1].name.localeCompare(b[1].name),
+  )) {
+    const prev = standings[standings.length - 1];
+    const rank = prev && prev.entry.total === entry.total ? prev.rank : standings.length + 1;
+    standings.push({ key, entry, rank });
+  }
+  const query = rankQuery.trim().toLowerCase();
+  const visibleStandings = query ? standings.filter((s) => s.entry.name.toLowerCase().includes(query)) : standings;
+  const canExpand = seasonGigs.length > 0 && standings.length > Math.min(10, ranked.length);
   const catLabel = (key: string) => categories.find((c) => c.key === key)?.label ?? key;
 
   return (
@@ -193,7 +230,14 @@ export default function BannerTrendsTab() {
         </table>
       </Card>
 
-      <Card title="Most-gigged cadets" subtitle="Named gigs this season. Tap a cadet to see each gig.">
+      <Card
+        title="Most-gigged cadets"
+        subtitle={
+          showAllCadets
+            ? "Every cadet in the battalion, ranked by named gigs this season. Tap a cadet to see each gig."
+            : "Named gigs this season. Tap a cadet to see each gig."
+        }
+      >
         <div className="mb-3 flex flex-wrap gap-2">
           <div className="flex overflow-hidden rounded-md border border-slate-300 text-xs">
             {(["all", ...BANNER_COMPANIES] as const).map((c) => (
@@ -239,6 +283,61 @@ export default function BannerTrendsTab() {
           <p className="py-4 text-center text-sm text-slate-400">
             No cadets named yet. Add names under “Who was gigged?” when recording scores.
           </p>
+        ) : showAllCadets ? (
+          <>
+            <input
+              type="search"
+              value={rankQuery}
+              onChange={(e) => setRankQuery(e.target.value)}
+              placeholder="Find a cadet"
+              className="mb-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
+            />
+            <div className="max-h-96 overflow-y-auto rounded-md border border-slate-200">
+              <table className="w-full text-sm" style={{ fontVariantNumeric: "tabular-nums" }}>
+                <thead className="sticky top-0 bg-slate-50 text-xs text-slate-500">
+                  <tr>
+                    <th className="w-10 px-2 py-1.5 text-right font-semibold">#</th>
+                    <th className="px-2 py-1.5 text-left font-semibold">Cadet</th>
+                    <th className="w-14 px-2 py-1.5 text-left font-semibold">Co.</th>
+                    <th className="w-14 px-2 py-1.5 text-right font-semibold">Gigs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleStandings.map(({ key, entry, rank }) => {
+                    const isSelected = selectedCadet === key;
+                    return (
+                      <tr key={key} className={`border-t border-slate-100 ${isSelected ? "bg-slate-100" : ""}`}>
+                        <td className="px-2 py-1 text-right text-slate-500">{rank}</td>
+                        <td className="px-2 py-1 text-slate-800">
+                          {entry.total > 0 ? (
+                            <button
+                              onClick={() => setSelectedCadet(isSelected ? null : key)}
+                              aria-pressed={isSelected}
+                              className="w-full text-left hover:underline"
+                            >
+                              {entry.name}
+                            </button>
+                          ) : (
+                            entry.name
+                          )}
+                        </td>
+                        <td className="px-2 py-1 text-xs text-slate-600">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: COMPANY_COLORS[entry.company] }} />
+                            C{entry.company}
+                          </span>
+                        </td>
+                        <td className={`px-2 py-1 text-right font-semibold ${entry.total > 0 ? "text-slate-900" : "text-slate-300"}`}>
+                          {entry.total}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {visibleStandings.length === 0 && <p className="py-4 text-center text-sm text-slate-400">No cadets match.</p>}
+            </div>
+          </>
         ) : (
           <BarList
             rows={ranked.slice(0, 10).map(([key, e]) => ({
@@ -252,7 +351,26 @@ export default function BannerTrendsTab() {
             onSelect={(key) => setSelectedCadet(selectedCadet === key ? null : key)}
           />
         )}
-        {ranked.length > 10 && <p className="mt-1 text-xs text-slate-400">Top 10 of {ranked.length} cadets.</p>}
+        {(canExpand || ranked.length > 10) && (
+          <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
+            <span>
+              {showAllCadets
+                ? `${standings.length} cadets ranked`
+                : ranked.length > 10
+                  ? `Top 10 of ${ranked.length} cadets.`
+                  : ""}
+            </span>
+            {canExpand && (
+              <button
+                onClick={() => setShowAllCadets(!showAllCadets)}
+                aria-expanded={showAllCadets}
+                className="font-semibold text-slate-700 hover:text-slate-900"
+              >
+                {showAllCadets ? "Show top 10" : "Show full battalion rankings"}
+              </button>
+            )}
+          </div>
+        )}
 
         {selected && (
           <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
