@@ -252,8 +252,8 @@ async function parseNamedGigs(
   const named: NamedGigInput[] = [];
   for (const item of raw as Record<string, unknown>[]) {
     const count = Number(item.count);
-    if (!Number.isFinite(count) || count <= 0 || Math.round(count * 2) !== count * 2) {
-      return { ok: false, error: "Each named cadet needs a gig count above 0 (whole or half)" };
+    if (!Number.isInteger(count) || count <= 0) {
+      return { ok: false, error: "Each named cadet needs a whole number of gigs (1 or more)" };
     }
     const reason = typeof item.reason === "string" && item.reason.trim() ? item.reason.trim().slice(0, 200) : null;
     if (item.cadet_id != null) {

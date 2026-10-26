@@ -114,9 +114,9 @@ export default function BannerNamedGigsEditor({ value, onChange, roster, gigs }:
               <div className="mt-1 flex gap-2">
                 <input
                   type="number"
-                  inputMode="decimal"
-                  min="0.5"
-                  step="0.5"
+                  inputMode="numeric"
+                  min="1"
+                  step="1"
                   value={row.count}
                   onChange={(e) => update(i, { count: e.target.value })}
                   aria-label={`${row.cadet_name} gigs`}
