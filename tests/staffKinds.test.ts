@@ -39,6 +39,15 @@ test("First Sergeant's reports must balance", () => {
   assert.equal(validateStaffData(r, { ...base, present: 50, excused: 2, unexcused: 1 }).ok, true);
 });
 
+test("First Sergeant's reports accept Sunday and all-school formations", () => {
+  const r = kind("first_sgt_reports");
+  const base = { date: "2026-10-25", company: "A", assigned: 50, present: 50, excused: 0, unexcused: 0, submitted: "Submitted" };
+  for (const formation of ["All Corps", "Second Formation", "Parade", "Parade Practice", "March On", "ASM", "All School", "Other"]) {
+    assert.equal(validateStaffData(r, { ...base, formation }).ok, true, formation);
+  }
+  assert.equal(validateStaffData(r, { ...base, formation: "Brunch" }).ok, false);
+});
+
 test("laundry pickup needs a time, not before notification", () => {
   const l = kind("laundry");
   const base = { notified: "2026-09-26T09:00", company: "B", items: 6 };
